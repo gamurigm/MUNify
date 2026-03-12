@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Base de Datos Relacional + Vectorial
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: munify-db
+    environment:
+      POSTGRES_USER: munify_user
+      POSTGRES_PASSWORD: munify_password
+      POSTGRES_DB: munify_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - munify-network
+
+  # Cache y Mensajería Real-time
+  redis:
+    image: redis:7-alpine
+    container_name: munify-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - munify-network
+
+  # Observabilidad (Prometheus)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: munify-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - munify-network
+
+  # Observabilidad (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: munify-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - munify-network
+
+networks:
+  munify-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

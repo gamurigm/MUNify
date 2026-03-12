@@ -1,0 +1,18 @@
+{
+  "name": "collaboration-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx y-websocket",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "y-websocket": "^1.5.0",
+    "yjs": "^13.6.29"
+  }
+}

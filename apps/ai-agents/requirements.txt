@@ -1,0 +1,10 @@
+langgraph
+pydantic
+python-dotenv
+tavily-python
+langchain-nvidia-ai-endpoints
+langchain-core
+fastapi
+uvicorn
+logfire[fastapi]
+pydantic-settings

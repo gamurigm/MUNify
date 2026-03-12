@@ -1,0 +1,9 @@
+{
+  "source_directories": [
+    "apps/ai-agents"
+  ],
+  "search_path": [
+    ".\\apps\\ai-agents\\venv\\Lib\\site-packages",
+    "apps/ai-agents/venv/Lib/site-packages"
+  ]
+}

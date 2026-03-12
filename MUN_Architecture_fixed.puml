@@ -1,0 +1,189 @@
+@startuml MUN_Architecture_WSL_Ubuntu
+
+title MUN System - Arquitectura Distribuida Local\nWSL Ubuntu + Docker + NVIDIA NIM Cloud
+
+skinparam backgroundColor #f8f9fa
+skinparam defaultFontName "Segoe UI"
+skinparam ArrowColor #555555
+skinparam componentBorderColor #888888
+
+' ===== EXTERNAL CLOUD =====
+cloud "External Services" as CLOUD #lightpink {
+    component [NVIDIA NIM API\nintegrate.api.nvidia.com\n🤖 Llama 3 70B / Mistral 7B\n💰 Pay-per-use] as NIM #tomato
+}
+
+' ===== WINDOWS HOST =====
+node "Windows 11 Host" as WIN #lightblue {
+    component [NVIDIA GPU\nRTX 4070/4080] as GPU #orange
+}
+
+note right of WIN : GPU compartido via WSL-CUDA
+
+' ===== WSL UBUNTU =====
+package "WSL Ubuntu 22.04\n[Docker Engine nativo | GPU via WSL-CUDA | 16GB+ RAM | 8 cores]" as WSL #d4edda {
+
+    ' --- Load Balancer ---
+    package "Load Balancer" as LB_LAYER #aliceblue {
+        component [NGINX\nlocalhost:80\nRound Robin] as NGINX #lightblue
+    }
+
+    note top of NGINX : Round Robin · Health Checks · SSL Termination
+
+    ' --- Frontend ---
+    package "Frontend Tier" as FRONTEND #honeydew {
+        component [Next.js 15 - 1\n:3001 | React 19] as F1 #90ee90
+        component [Next.js 15 - 2\n:3002 | React 19] as F2 #90ee90
+        component [Next.js 15 - 3\n:3003 | React 19] as F3 #90ee90
+    }
+
+    ' --- API Gateway ---
+    package "API Gateway" as GATEWAY #e8e0f0 {
+        component [Hono Gateway\n:8000\nAuth + Routing | Edge Runtime] as AG #9370db
+    }
+
+    ' --- Core Services ---
+    package "Core Services" as SERVICES #fce4ec {
+
+        package "Document Services" as DOC_SERVICES #fffde7 {
+            component [Document API 1\nFastAPI :8011\nCRUD] as DS1 #ffd700
+            component [Document API 2\nFastAPI :8012\nCRUD] as DS2 #ffd700
+        }
+
+        package "AI Agent Services" as AGENT_SERVICES #fce4ec {
+            component [Agent Service 1\nLangGraph + Pydantic\n:8021 | GPU Share] as AS1 #fa8072
+            component [Agent Service 2\nLangGraph + Pydantic\n:8022 | GPU Share] as AS2 #fa8072
+        }
+
+        package "RAG Services" as RAG_SERVICES #e0f7fa {
+            component [RAG API 1\nFastAPI :8031\nVector Search] as RS1 #20b2aa
+            component [RAG API 2\nFastAPI :8032\nVector Search] as RS2 #20b2aa
+        }
+
+        package "WebSocket Services" as WS_SERVICES #fce4f0 {
+            component [WebSocket 1\nSocket.IO :8041\nReal-time] as WS1 #dda0dd
+            component [WebSocket 2\nSocket.IO :8042\nReal-time] as WS2 #dda0dd
+        }
+
+        component [Auth Service\nJWT + Sessions\n:8005 | Security] as AUTH #ffb6c1
+    }
+
+    ' --- Message Queue ---
+    package "Message Queue" as QUEUE #fffde7 {
+        database "Redis Cluster\n:6379\nBull Queue · Pub/Sub" as REDIS #ffd700
+        component [Redis Commander\n:8081 | Admin UI] as REDISUI #daa520
+    }
+
+    ' --- Data Layer ---
+    package "Data Layer\n[Volúmenes Docker | Backup automático | Encriptado en reposo]" as DATA #eeeeee {
+        database "Supabase\nPostgreSQL 15 + Pgvector\n:54321 | Main Database" as SUPA #b0c4de
+        database "ChromaDB\nVector Store :8010\nEmbeddings | RAG" as CHROMA #f08080
+        database "MinIO\nFile Storage\n:9000/:9001 | S3 Compatible" as MINIO #ffa07a
+    }
+
+    ' --- Monitoring ---
+    package "Observability\n[Metrics + Logs + Traces | Alerts | Dashboards custom]" as MONITORING #fffff0 {
+        component [Prometheus\nMetrics :9090\nTime Series] as PROM #fffacd
+        component [Grafana\nDashboards :3333\nVisualization] as GRAF #ffa500
+        component [Jaeger\nTracing :16686\nDistributed] as JAEGER #d3d3d3
+    }
+}
+
+' ===== CONNECTIONS =====
+
+' GPU
+GPU -down-> AS1 : WSL-CUDA
+GPU -down-> AS2 : WSL-CUDA
+
+' Load Balancer → Frontend
+NGINX -down-> F1 : HTTP/3
+NGINX -down-> F2 : HTTP/3
+NGINX -down-> F3 : HTTP/3
+
+' Frontend → Gateway
+F1 -down-> AG : REST API
+F2 -down-> AG : REST API
+F3 -down-> AG : REST API
+
+' Gateway → Services
+AG -down-> DS1 : /api/documents
+AG -down-> DS2 : /api/documents
+AG -down-> AS1 : /api/generate
+AG -down-> AS2 : /api/generate
+AG -down-> RS1 : /api/search
+AG -down-> RS2 : /api/search
+AG -down-> WS1 : /socket.io
+AG -down-> WS2 : /socket.io
+AG -down-> AUTH : /api/auth
+
+' Document Services → Data
+DS1 -down-> SUPA : PostgreSQL
+DS2 -down-> SUPA : PostgreSQL
+DS1 -down-> MINIO : File Upload
+DS2 -down-> MINIO : File Upload
+DS1 -right-> REDIS : Cache
+DS2 -right-> REDIS : Cache
+
+' Agent Services
+AS1 -up-> NIM : HTTPS API
+AS2 -up-> NIM : HTTPS API
+AS1 -down-> RS1 : Context
+AS2 -down-> RS2 : Context
+AS1 -right-> REDIS : Queue
+AS2 -right-> REDIS : Queue
+
+' RAG Services
+RS1 -down-> CHROMA : Vector Ops
+RS2 -down-> CHROMA : Vector Ops
+RS1 -right-> REDIS : Cache
+RS2 -right-> REDIS : Cache
+
+' WebSocket Services
+WS1 -down-> SUPA : Sessions
+WS2 -down-> SUPA : Sessions
+WS1 -right-> REDIS : Pub/Sub
+WS2 -right-> REDIS : Pub/Sub
+
+' Auth Service
+AUTH -down-> SUPA : Users
+AUTH -right-> REDIS : Sessions
+
+' Redis Admin
+REDISUI -down-> REDIS : Admin
+
+' Monitoring
+PROM -up-> DS1 : /metrics
+PROM -up-> DS2 : /metrics
+PROM -up-> AS1 : /metrics
+PROM -up-> AS2 : /metrics
+PROM -up-> RS1 : /metrics
+PROM -up-> RS2 : /metrics
+PROM -up-> WS1 : /metrics
+PROM -up-> WS2 : /metrics
+GRAF -right-> PROM : PromQL
+JAEGER -up-> AG : Traces
+JAEGER -up-> AS1 : Traces
+
+' Port forwarding to Windows host
+NGINX -.up.> WIN : localhost:80
+GRAF -.up.> WIN : localhost:3333
+REDISUI -.up.> WIN : localhost:8081
+MINIO -.up.> WIN : localhost:9001
+
+' ===== NOTES =====
+note right of NIM : Solo servicio externo\n$0.0006 per 1K tokens\nBaja latencia
+
+' ===== LEGEND =====
+legend top right
+|Tipo|Color|
+|Frontend|<#90ee90>|
+|API Gateway|<#9370db>|
+|Microservicios|<#ffd700>|
+|AI / GPU|<#fa8072>|
+|Storage|<#b0c4de>|
+|External|<#tomato>|
+|Monitoring|<#ffa500>|
+endlegend
+
+footer Arquitectura MUN System - WSL Ubuntu + Docker + NVIDIA NIM | %date("yyyy-MM-dd")
+
+@enduml

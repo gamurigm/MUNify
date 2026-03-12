@@ -1,0 +1,156 @@
+% ============================================================
+% Plantilla LaTeX para Posición Oficial MUN — SICMUN / UNACHMUN
+% ============================================================
+\documentclass[12pt, a4paper]{article}
+
+% ── Paquetes ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{tocloft}
+\usepackage{parskip}
+\usepackage{float}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\onehalfspacing
+
+% ── Colores ──
+\definecolor{unblue}{RGB}{0, 114, 188}
+\definecolor{ungray}{RGB}{100, 100, 100}
+
+% ── Encabezado / Pie ──
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{ungray}{<<COMMITTEE>>}}
+\fancyhead[R]{\small\textcolor{ungray}{<<COUNTRY>>}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Formato de secciones ──
+\titleformat{\section}{\Large\bfseries\color{unblue}}{}{0em}{}
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=unblue,
+  urlcolor=unblue,
+  citecolor=unblue
+}
+
+\begin{document}
+
+% ════════════════════════════════════════════════════════════
+% PORTADA
+% ════════════════════════════════════════════════════════════
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+
+{\Large\textbf{<<COMMITTEE_FULL>>}}\\[0.5cm]
+{\large <<SESSION>>}\\[2cm]
+
+{\Huge\textbf{POSICIÓN OFICIAL DE <<COUNTRY_FULL>>}}\\[1.5cm]
+
+% Bandera del país (se sustituye con la ruta real)
+% \includegraphics[width=6cm]{flag_<<COUNTRY_CODE>>.png}
+\vspace{1cm}
+
+\textbf{Tema 1:} <<TOPIC_1>>\\[0.3cm]
+\textbf{Tema 2:} <<TOPIC_2>>\\[2cm]
+
+\textit{Delegado/a:} <<DELEGATE_NAME>>\\[0.3cm]
+\textit{Institución:} <<INSTITUTION>>\\[0.3cm]
+\textit{Fecha:} <<DATE>>
+
+\vfill
+\end{titlepage}
+
+% ════════════════════════════════════════════════════════════
+% ÍNDICE
+% ════════════════════════════════════════════════════════════
+\newpage
+\fancyhead[L]{\small\textcolor{ungray}{<<COMMITTEE>>}}
+\fancyhead[R]{\small\textcolor{ungray}{<<COUNTRY>>}}
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════
+% CARTA A LA MESA DIRECTIVA
+% ════════════════════════════════════════════════════════════
+\section{Carta a la Mesa Directiva}
+
+<<LETTER_CITY>>, <<LETTER_DATE>>
+
+Distinguidas Presidencias,
+
+<<LETTER_BODY>>
+
+Atentamente,
+
+\textbf{<<SIGNATORY_NAME>>}\\
+\textit{<<SIGNATORY_TITLE>>}
+
+\newpage
+
+% ════════════════════════════════════════════════════════════
+% ANÁLISIS COYUNTURAL
+% ════════════════════════════════════════════════════════════
+\section{Análisis Coyuntural}
+
+<<COYUNTURAL_INTRO>>
+
+\subsection{Indicadores Clave}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Indicador} & \textbf{Valor} \\
+\midrule
+<<INDICATORS_ROWS>>
+\bottomrule
+\end{tabular}
+\caption{Datos relevantes de <<COUNTRY>>. Fuente: UN Data.}
+\end{table}
+
+<<COYUNTURAL_BODY>>
+
+\newpage
+
+% ════════════════════════════════════════════════════════════
+% POSICIÓN OFICIAL TEMA 1
+% ════════════════════════════════════════════════════════════
+\section{Posición Oficial --- Tema 1: <<TOPIC_1>>}
+
+<<TOPIC_1_BODY>>
+
+\newpage
+
+% ════════════════════════════════════════════════════════════
+% POSICIÓN OFICIAL TEMA 2
+% ════════════════════════════════════════════════════════════
+\section{Posición Oficial --- Tema 2: <<TOPIC_2>>}
+
+<<TOPIC_2_BODY>>
+
+\newpage
+
+% ════════════════════════════════════════════════════════════
+% BIBLIOGRAFÍA
+% ════════════════════════════════════════════════════════════
+\section{Bibliografía}
+
+<<BIBLIOGRAPHY>>
+
+\end{document}

@@ -1,0 +1,38 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{float}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\onehalfspacing
+\definecolor{unblue}{RGB}{0, 114, 188}
+\titleformat{\section}{\Large\bfseries\color{unblue}}{}{0em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small <<COMMITTEE>>}
+\fancyhead[R]{\small <<COUNTRY>>}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+\begin{center}
+    {\Large\textbf{<<TITLE>>}}\\[0.5cm]
+    {\large <<TOPIC>>}
+\end{center}
+\vspace{1cm}
+
+<<CONTENT>>
+
+\end{document}

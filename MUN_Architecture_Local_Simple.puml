@@ -1,0 +1,124 @@
+@startuml MUN_Architecture_Local_Simple
+
+title MUN System - Arquitectura Local Simplificada\nlocalhost | 1-50 usuarios | Docker Compose
+
+skinparam backgroundColor #f8f9fa
+skinparam defaultFontName "Segoe UI"
+skinparam ArrowColor #555555
+skinparam componentBorderColor #888888
+skinparam noteBorderColor #aaaaaa
+skinparam noteBackgroundColor #fffde7
+
+' ===== EXTERNAL =====
+cloud "External Services" #lightpink {
+    component [NVIDIA NIM API\nintegrate.api.nvidia.com\nLlama 3 70B / Mistral 7B\nPay-per-use] as NIM #tomato
+}
+
+' ===== WINDOWS HOST =====
+node "Windows 11 Host" as WIN #lightblue {
+    component [NVIDIA GPU\nRTX 4070/4080] as GPU #orange
+}
+note right of WIN : GPU compartido via WSL-CUDA
+
+' ===== WSL UBUNTU =====
+package "WSL Ubuntu 22.04 — Docker Compose" as WSL #d4edda {
+
+    ' Frontend
+    package "Frontend" as FRONTEND #honeydew {
+        component [Next.js 15\n:3000 | React 19\nSSR + API Routes] as NEXT #90ee90
+    }
+
+    ' Gateway
+    package "API Gateway" as GATEWAY #e8e0f0 {
+        component [Hono Gateway\n:8000\nAuth + Routing\nEdge Runtime] as AG #9370db
+    }
+
+    ' Services
+    package "Services" as SERVICES #fce4ec {
+
+        component [Document API\nFastAPI :8011\nCRUD + Upload] as DS #ffd700
+
+        component [Agent Service\nLangGraph + Pydantic\n:8021 | GPU] as AS #fa8072
+
+        component [RAG API\nFastAPI :8031\nVector Search] as RS #20b2aa
+
+        component [WebSocket\nSocket.IO :8041\nReal-time] as WS #dda0dd
+
+        component [Auth Service\nJWT + Sessions\n:8005] as AUTH #ffb6c1
+    }
+
+    ' Data
+    package "Data Layer" as DATA #eeeeee {
+        database "Supabase\nPostgreSQL 15 + Pgvector\n:54321" as SUPA #b0c4de
+        database "ChromaDB\nVector Store\n:8010" as CHROMA #f08080
+        database "MinIO\nFile Storage\n:9000 | :9001" as MINIO #ffa07a
+        database "Redis\n:6379\nQueue + Cache + Pub/Sub" as REDIS #ffd700
+    }
+
+    ' Monitoring (opcional)
+    package "Monitoring (opcional)" as MON #fffff0 {
+        component [Grafana\n:3333\nDashboards] as GRAF #ffa500
+    }
+}
+
+' ===== CONNECTIONS =====
+
+' GPU
+GPU -down-> AS : WSL-CUDA
+
+' User → Frontend
+WIN -down-> NEXT : Browser\nlocalhost:3000
+
+' Frontend → Gateway
+NEXT -down-> AG : REST + WS
+
+' Gateway → Services
+AG -down-> DS   : /api/documents
+AG -down-> AS   : /api/generate
+AG -down-> RS   : /api/search
+AG -down-> WS   : /socket.io
+AG -down-> AUTH : /api/auth
+
+' Services → Data
+DS   -down-> SUPA  : PostgreSQL
+DS   -down-> MINIO : Files
+DS   -right-> REDIS : Cache
+
+AS   -up->  NIM   : HTTPS API
+AS   -down-> RS   : Context
+AS   -right-> REDIS : Queue
+
+RS   -down-> CHROMA : Vector Ops
+RS   -right-> REDIS  : Cache
+
+WS   -down-> SUPA  : Sessions
+WS   -right-> REDIS : Pub/Sub
+
+AUTH -down-> SUPA  : Users
+AUTH -right-> REDIS : Sessions
+
+' Monitoring
+GRAF -up-> SUPA : Stats
+
+' Port forwarding
+NEXT -.up.> WIN : localhost:3000
+GRAF -.up.> WIN : localhost:3333
+MINIO -.up.> WIN : localhost:9001
+
+note right of NIM : Único servicio externo\n$0.0006 per 1K tokens
+
+note bottom of DATA : Todo en volúmenes Docker\nBackup manual o cron
+
+legend top right
+|Servicio|Color|
+|Frontend|<#90ee90>|
+|API Gateway|<#9370db>|
+|Microservicios|<#ffd700>|
+|AI / GPU|<#fa8072>|
+|Storage|<#b0c4de>|
+|External|<#tomato>|
+endlegend
+
+footer MUN System — Local Simple | 1-50 usuarios | %date("yyyy-MM-dd")
+
+@enduml
