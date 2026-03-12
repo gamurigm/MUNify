@@ -2,7 +2,7 @@
 
 MUNify es una plataforma avanzada diseñada para simulaciones de Modelos de Naciones Unidas (MUN), potenciada por agentes de Inteligencia Artificial y edición colaborativa en tiempo real.
 
-![MUNify Preview](./MUNify-main-v2.png)
+![MUNify Preview](./assets/images/MUNify-main-v2.png)
 
 ## ✨ Características Principales
 

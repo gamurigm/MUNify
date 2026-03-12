@@ -1,0 +1,12 @@
+{
+  "include": ["."],
+  "exclude": ["venv", "__pycache__", "tests"],
+  "extraPaths": [".", "./venv/Lib/site-packages"],
+  "venvPath": ".",
+  "venv": "venv",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Windows"
+}

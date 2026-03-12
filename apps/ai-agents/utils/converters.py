@@ -1,3 +1,4 @@
+# pyre-ignore-all-errors
 import re
 
 # ── Carga de plantilla LaTeX ──
