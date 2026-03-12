@@ -1,6 +1,6 @@
 # pyre-ignore-all-errors
 import os
-from typing import TypedDict, List
+from typing import TypedDict, List, Optional
 from langgraph.graph import StateGraph, END  # pyre-ignore
 from pydantic import BaseModel, Field  # pyre-ignore
 import logfire  # pyre-ignore
@@ -18,15 +18,21 @@ class AgentState(TypedDict):
     is_valid: bool
     errors: List[str]
     strategy_guide: str
+    notebook_id: Optional[str] # Contexto profesional de NotebookLM
 
 import os
 from dotenv import load_dotenv  # pyre-ignore
 from tavily import TavilyClient  # pyre-ignore
+from pathlib import Path
 
-load_dotenv()
+# Load .env relative to this file
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # 🔑 Inicialización de Clientes
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+from notebook_service import notebook_service # pyre-ignore
 
 # [SEARCH] 1. Agente Investigador (Tavily)
 @logfire.instrument("Researcher Node")
@@ -34,7 +40,7 @@ async def researcher_node(state: AgentState):
     print(f"--- INVESTIGANDO CON TAVILY SOBRE: {state['topic']} ---")
     
     query = f"recent news and geopolitical position of {state['country']} on {state['topic']}"
-    search_result = tavily.search(query=query, search_depth="advanced", max_results=5)
+    search_result = tavily.search(query=query, search_depth="advanced", max_results=35)
     
     context = [res['content'] for res in search_result['results']]
     
@@ -180,7 +186,7 @@ def latex_to_html(latex: str) -> str:
             cells = [c.strip() for c in row.split('&')]
             tag = 'th' if i == 0 else 'td'
             cells_html = ''.join(f'<{tag}>{c}</{tag}>' for c in cells)
-            row_html: str = f'<tr>{cells_html}</tr>'
+            row_html = f'<tr>{cells_html}</tr>' # pyre-ignore
             html_rows.append(row_html)
         
         return f'<table>{caption}{"".join(html_rows)}</table>'
@@ -281,13 +287,11 @@ def html_to_latex(html: str) -> str:
             cells = re.findall(r'<t[hd]>(.*?)</t[hd]>', row)
             latex_row = ' & '.join(cells) + ' \\\\'
             if i == 0:
-                latex_rows.append('\\toprule')
-                lr: str = latex_row
-                latex_rows.append(lr)
-                latex_rows.append('\\midrule')
+                latex_rows.append('\\toprule') # pyre-ignore
+                latex_rows.append(latex_row) # pyre-ignore
+                latex_rows.append('\\midrule') # pyre-ignore
             else:
-                lr2: str = latex_row
-                latex_rows.append(lr2)
+                latex_rows.append(latex_row) # pyre-ignore
         latex_rows.append('\\bottomrule')
         
         return f'\\begin{{table}}[H]\n\\centering\n\\begin{{tabular}}{{@{{}}{col_spec}@{{}}}}\n' + '\n'.join(latex_rows) + f'\n\\end{{tabular}}\n\\end{{table}}'
@@ -326,6 +330,17 @@ async def librarian_node(state: AgentState):
         context.append("Acuerdo de París sobre el cambio climático.")
         context.append("Agenda 2030 para el Desarrollo Sostenible (ODS 13).")
     
+    # --- NUEVA CAPA: Ingesta de NotebookLM ---
+    # Si el estado tiene un notebook_id, lo consultamos para contexto ultra-profesional
+    if state.get("notebook_id"):
+        print(f"--- CONSULTANDO NOTEBOOKLM ({state['notebook_id']}) ---")
+        prompt = f"Proporciona contexto legal, histórico y resoluciones previas relevantes para {state['topic']} desde la perspectiva de {state['country']} en el comité {state['committee']}."
+        try:
+            nlm_context = await notebook_service.query_notebook(state["notebook_id"], prompt)
+            context.append(f"CONTEXTO PROFESIONAL (NotebookLM):\n{nlm_context}")
+        except Exception as e:
+            print(f"Error consultando NotebookLM: {e}")
+
     state["legal_context"] = context
     return state
 
@@ -446,14 +461,17 @@ Si tiene errores críticos de compilación LaTeX o no cumple las REGLAS DE FORMA
 async def negotiator_node(state: AgentState):
     print("--- GENERANDO GUÍA ESTRATÉGICA Y ALIANZAS ---")
     
-    prompt = f"""Basado en este documento redactado por {state['country']} sobre {state['topic']},
+    draft_text_str = str(state.get("draft", ""))
+    country = state.get("country", "Unknown")
+    topic = state.get("topic", "Unknown")
+    prompt = f"""Basado en este documento redactado por {country} sobre {topic},
     genera una guía estratégica para el delegado:
     1. Identifica 3 países/bloques que apoyen esta posición.
     2. Identifica 3 países/bloques que se opongan.
     3. Sugiere 2 puntos de negociación donde se pueda ceder.
     
     DOCUMENTO:
-    {str(state['draft'])[:2000]}
+    {draft_text_str[:2000]} # pyre-ignore
     """
     
     response = critic_llm.invoke([

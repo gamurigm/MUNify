@@ -7,10 +7,13 @@ import logfire  # pyre-ignore
 from fastapi import FastAPI, HTTPException  # pyre-ignore
 from fastapi.responses import FileResponse  # pyre-ignore
 from pydantic import BaseModel  # pyre-ignore
-from typing import Optional, List
+from typing import List, Optional, Any
 from dotenv import load_dotenv  # pyre-ignore
+from pathlib import Path
 
-load_dotenv()
+# Load .env relative to this file
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Initialize Logfire
 logfire.configure(
@@ -29,6 +32,7 @@ logfire.info("MUNify AI Agents Service Started")
 # Import workflow AFTER Logfire is configured
 from main import app as agent_workflow  # pyre-ignore
 from main import latex_to_html, html_to_latex  # pyre-ignore
+from notebook_service import notebook_service
 
 app = FastAPI(
     title="MUNify AI Agents API",
@@ -44,6 +48,7 @@ class GenerateRequest(BaseModel):
     country: str
     committee: str
     documentType: Optional[str] = "POSITION_PAPER"
+    notebookId: Optional[str] = None
 
 class GenerateResponse(BaseModel):
     draft: str              # LaTeX source
@@ -75,19 +80,21 @@ async def generate_document(request: GenerateRequest):
             "draft_html": "",
             "is_valid": False,
             "errors": [],
-            "strategy_guide": ""
+            "strategy_guide": "",
+            "notebook_id": request.notebookId
         }
         
         config = {"recursion_limit": 10}
         result = await agent_workflow.ainvoke(initial_state, config)
         
-        return GenerateResponse(
-            draft=result.get("draft", ""),
-            draft_html=result.get("draft_html", ""),
-            strategy_guide=result.get("strategy_guide", ""),
-            errors=result.get("errors", []),
-            research_data=result.get("research_data", [])
-        )
+        response_data = {
+            "draft": str(result.get("draft", "")),
+            "draft_html": str(result.get("draft_html", "")),
+            "strategy_guide": str(result.get("strategy_guide", "")),
+            "errors": result.get("errors", []),
+            "research_data": result.get("research_data", [])
+        }
+        return GenerateResponse(**response_data) # pyre-ignore
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -96,8 +103,8 @@ async def generate_document(request: GenerateRequest):
 async def convert_html_to_latex_endpoint(request: ConvertRequest):
     """Convierte HTML del editor Tiptap a LaTeX para persistencia."""
     try:
-        result = html_to_latex(request.content)
-        return ConvertResponse(latex=result)
+        result = html_to_latex(str(request.content))
+        return ConvertResponse(**{"latex": str(result)}) # pyre-ignore
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -137,6 +144,24 @@ async def compile_pdf_from_html(request: CompileHtmlRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"HTML to PDF failed: {str(e)}")
 
+# --- ENDPOINTS DE CONTEXTO ---
+
+class IngestRequest(BaseModel):
+    notebookTitle: str
+    files: List[str]  # Absolute paths to PDFs
+
+@app.post("/api/v1/ingest-context")
+async def ingest_context(request: IngestRequest):
+    """Crea un notebook y sube archivos PDF para contexto."""
+    try:
+        notebook_id = await notebook_service.ingest_professional_context(
+            request.notebookTitle, 
+            request.files
+        )
+        return {"notebook_id": notebook_id, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def _do_compile(latex_code: str):
     tmpdir = tempfile.mkdtemp(prefix="munify_")
     tex_path = os.path.join(tmpdir, "document.tex")
@@ -165,7 +190,10 @@ async def _do_compile(latex_code: str):
             log_tail = ""
             if os.path.exists(log_path):
                 with open(log_path, "r", encoding="utf-8", errors="ignore") as lf:
-                    log_tail = "".join(lf.readlines()[-30:])
+                    lines_log: List[Any] = lf.readlines() # pyre-ignore
+                    # Usar slice positivo para evitar advertencias de tipado
+                    start_idx = max(0, len(lines_log) - 30)
+                    log_tail = "".join(lines_log[start_idx:]) # pyre-ignore
             raise HTTPException(status_code=500, detail=f"pdflatex failed:\n{log_tail}")
         
         return FileResponse(
