@@ -168,10 +168,7 @@ export default function HomePage() {
                   {committees.map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => {
-                        setSelectedCommittee(c.name);
-                        setIsModalOpen(true);
-                      }}
+                      onClick={() => router.push(`/room/${c.id}`)}
                       className="group text-left p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
                       style={{
                         background: 'rgba(255,255,255,0.04)',

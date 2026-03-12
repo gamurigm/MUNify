@@ -71,6 +71,7 @@ export const useCollaborativeEditor = (
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
+      // @ts-ignore - history is disabled to avoid conflict with Collaboration extension
       StarterKit.configure({ history: false }),
       Collaboration.configure({ document: ydoc }),
       Underline,
