@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import mammoth from 'mammoth';
 
 /* ───────── Committee data ───────── */
 const COMMITTEES: Record<string, { name: string; sub: string; color: string }> = {
@@ -57,6 +58,12 @@ function formatTime(totalSeconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+const COMMON_COUNTRY_MAP: Record<string, string> = {
+  'bolivia': 'bo', 'venezuela': 've', 'palestina': 'ps', 'corea del norte': 'kp',
+  'corea del sur': 'kr', 'vaticano': 'va', 'suiza': 'ch', 'holanda': 'nl',
+  'paises bajos': 'nl', 'irlanda': 'ie', 'reino unido': 'gb', 'estados unidos': 'us'
+};
+
 export default function RoomPage() {
   const router = useRouter();
   const { committeeId } = useParams() as { committeeId: string };
@@ -79,18 +86,43 @@ export default function RoomPage() {
     return () => clearInterval(interval);
   }, [sessionRunning]);
 
-  /* ── Countries Management ── */
+  /* ── Countries Management (Persistent) ── */
   const [allCountries, setAllCountries] = useState(INITIAL_COUNTRIES);
   const [newCountryName, setNewCountryName] = useState('');
   const [participants, setParticipants] = useState<string[]>([]);
+
+  useEffect(() => {
+    const savedCustom = localStorage.getItem(`room_${committeeId}_custom_countries`);
+    const savedPresence = localStorage.getItem(`room_${committeeId}_presence`);
+    if (savedCustom) setAllCountries(prev => [...JSON.parse(savedCustom), ...prev]);
+    if (savedPresence) setParticipants(JSON.parse(savedPresence));
+  }, [committeeId]);
+
   const toggleParticipant = (code: string) => {
-    setParticipants(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+    const newPresence = participants.includes(code) ? participants.filter(c => c !== code) : [...participants, code];
+    setParticipants(newPresence);
+    localStorage.setItem(`room_${committeeId}_presence`, JSON.stringify(newPresence));
   };
 
-  const addNewCountry = () => {
+  const addNewCountry = async () => {
     if (!newCountryName.trim()) return;
-    const code = 'custom-' + Math.random().toString(36).substr(2, 4);
-    setAllCountries(prev => [{ code, name: newCountryName }, ...prev]);
+    const nameLower = newCountryName.toLowerCase().trim();
+    let code = 'custom-' + Math.random().toString(36).substr(2, 4);
+    if (COMMON_COUNTRY_MAP[nameLower]) {
+      code = COMMON_COUNTRY_MAP[nameLower];
+    } else {
+      try {
+        const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(nameLower)}?fields=cca2`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data[0]?.cca2) code = data[0].cca2.toLowerCase();
+        }
+      } catch (e) { console.error('Flag search failed', e); }
+    }
+    const newCountry = { code, name: newCountryName.trim() };
+    setAllCountries(prev => [newCountry, ...prev]);
+    const currentCustom = JSON.parse(localStorage.getItem(`room_${committeeId}_custom_countries`) || '[]');
+    localStorage.setItem(`room_${committeeId}_custom_countries`, JSON.stringify([newCountry, ...currentCustom]));
     setNewCountryName('');
   };
 
@@ -101,7 +133,6 @@ export default function RoomPage() {
   const [speakers, setSpeakers] = useState<{ code: string; name: string }[]>([]);
   const [currentSpeakerIdx, setCurrentSpeakerIdx] = useState(0);
   const addToSpeakers = (country: { code: string; name: string }) => setSpeakers(prev => [...prev, country]);
-
   const nextSpeaker = () => {
     if (speakers.length > 0) {
       setCurrentSpeakerIdx(p => (p + 1) % speakers.length);
@@ -120,32 +151,36 @@ export default function RoomPage() {
     return () => clearInterval(interval);
   }, [swRunning]);
 
-  /* ── Document Center (IndexedDB Persistence for local PDFs) ── */
-  const [documents, setDocuments] = useState<{ id: string; title: string; blob?: Blob; url?: string }[]>([]);
+  /* ── Document Center (Persistent PDFs & DOCXs) ── */
+  const [documents, setDocuments] = useState<{ id: string; title: string; blob?: Blob; url?: string; type: 'pdf' | 'docx'; html?: string }[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize and Load from IndexedDB
   useEffect(() => {
-    const request = indexedDB.open('MUNifyDB', 1);
-    
+    const request = indexedDB.open('MUNifyDB', 3); // Bump version again to force upgrade
     request.onupgradeneeded = (e: any) => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains('pdfs')) {
-        db.createObjectStore('pdfs', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('docs')) {
+        db.createObjectStore('docs', { keyPath: 'id' });
+      }
+      // Cleanup old store name if it exists from previous version
+      if (db.objectStoreNames.contains('pdfs')) {
+        db.deleteObjectStore('pdfs');
       }
     };
-
     request.onsuccess = (e: any) => {
       const db = e.target.result;
-      const transaction = db.transaction('pdfs', 'readonly');
-      const store = transaction.objectStore('pdfs');
-      const getAllRequest = store.getAll();
+      
+      // Robustness check: avoid transaction if store doesn't exist
+      if (!db.objectStoreNames.contains('docs')) return;
 
+      const transaction = db.transaction('docs', 'readonly');
+      const store = transaction.objectStore('docs');
+      const getAllRequest = store.getAll();
       getAllRequest.onsuccess = () => {
         const savedDocs = getAllRequest.result.map((doc: any) => ({
           ...doc,
-          url: URL.createObjectURL(doc.blob)
+          url: doc.type === 'pdf' ? URL.createObjectURL(doc.blob) : undefined
         }));
         if (savedDocs.length > 0) {
           setDocuments(savedDocs);
@@ -155,51 +190,55 @@ export default function RoomPage() {
     };
   }, []);
 
-  const saveToDB = (doc: { id: string; title: string; blob: Blob }) => {
-    const request = indexedDB.open('MUNifyDB', 1);
+  const saveToDB = (doc: any) => {
+    const request = indexedDB.open('MUNifyDB', 3);
     request.onsuccess = (e: any) => {
       const db = e.target.result;
-      const transaction = db.transaction('pdfs', 'readwrite');
-      const store = transaction.objectStore('pdfs');
-      store.add(doc);
+      if (!db.objectStoreNames.contains('docs')) return;
+      const transaction = db.transaction('docs', 'readwrite');
+      const store = transaction.objectStore('docs');
+      store.put(doc);
     };
   };
 
   const removeFromDB = (id: string) => {
-    const request = indexedDB.open('MUNifyDB', 1);
+    const request = indexedDB.open('MUNifyDB', 3);
     request.onsuccess = (e: any) => {
       const db = e.target.result;
-      const transaction = db.transaction('pdfs', 'readwrite');
-      const store = transaction.objectStore('pdfs');
+      if (!db.objectStoreNames.contains('docs')) return;
+      const transaction = db.transaction('docs', 'readwrite');
+      const store = transaction.objectStore('docs');
       store.delete(id);
     };
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
+      const id = 'doc-' + Math.random().toString(36).substr(2, 7);
       if (file.type === 'application/pdf') {
-        const id = 'pdf-' + Math.random().toString(36).substr(2, 7);
-        const newDoc = { id, title: file.name, blob: file };
-        
+        const newDoc: any = { id, title: file.name, blob: file, type: 'pdf' };
         saveToDB(newDoc);
-        
-        const docWithUrl = { ...newDoc, url: URL.createObjectURL(file) };
-        setDocuments(prev => [...prev, docWithUrl]);
+        setDocuments(prev => [...prev, { ...newDoc, url: URL.createObjectURL(file) }]);
+        setActiveDocId(id);
+      } else if (file.name.endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const newDoc: any = { id, title: file.name, html: result.value, type: 'docx' };
+        saveToDB(newDoc);
+        setDocuments(prev => [...prev, newDoc]);
         setActiveDocId(id);
       }
-    });
+    }
     e.target.value = '';
   };
 
   const closeDoc = (id: string) => {
     const docToClose = documents.find(d => d.id === id);
     if (docToClose?.url) URL.revokeObjectURL(docToClose.url);
-    
     removeFromDB(id);
-    
     const newDocs = documents.filter(doc => doc.id !== id);
     setDocuments(newDocs);
     if (activeDocId === id) setActiveDocId(newDocs.length > 0 ? newDocs[0].id : null);
@@ -216,12 +255,10 @@ export default function RoomPage() {
     { id: '2', label: 'Pase de Lista', time: 0, type: 'fase', color: '#c44dff' },
     { id: '3', label: 'GSL (Lista General de Oradores)', time: 0, type: 'fase', color: '#00f5ff' }
   ]);
-
   const addActivity = (label: string, type: string = 'motion', color?: string) => {
     const newId = Math.random().toString(36).substr(2, 9);
     setActivities(prev => [...prev, { id: newId, label, time: sessionSeconds, type, color }]);
   };
-
   const filteredCountries = allCountries.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -243,12 +280,19 @@ export default function RoomPage() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => router.push(`/room/${committeeId}/drafting`)}
+            className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition border bg-cyan-500/10 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500 hover:text-white"
+          >
+            Drafting Studio
+          </button>
+          <div className="h-4 w-px bg-white/10 mx-1" />
           <div className="flex items-center gap-4 px-4 py-1.5 rounded-2xl bg-white/[0.03] border border-white/5">
             <span className="font-mono text-lg font-black tabular-nums tracking-tighter" style={{ color: accentColor }}>{formatTime(sessionSeconds)}</span>
             <button onClick={() => setSessionRunning(!sessionRunning)} className="w-8 h-8 rounded-lg flex items-center justify-center transition hover:scale-105 active:scale-95" style={{ background: sessionRunning ? '#ef4444' : accentColor, color: '#020617' }}>{sessionRunning ? '⏸' : '▶'}</button>
           </div>
           <button onClick={() => setFocusMode(!focusMode)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition border ${focusMode ? 'bg-white text-black' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'}`}>
-            {focusMode ? 'Escritorio' : 'Enfoque'}
+            {focusMode ? 'Escritorio' : 'Modo Enfoque'}
           </button>
         </div>
       </header>
@@ -357,24 +401,30 @@ export default function RoomPage() {
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 mr-4 py-0.5">
                    {documents.map(doc => (
                      <button key={doc.id} onClick={() => setActiveDocId(doc.id)} className={`h-8 px-4 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border shrink-0 ${activeDocId === doc.id ? 'bg-white text-black border-white' : 'bg-white/5 text-white/30 border-white/5 hover:bg-white/10'}`}>
-                        📄 {doc.title.length > 20 ? doc.title.substring(0, 17) + '...' : doc.title}
+                        {doc.type === 'pdf' ? '📄' : '📝'} {doc.title.length > 20 ? doc.title.substring(0, 17) + '...' : doc.title}
                         <span onClick={(e) => { e.stopPropagation(); closeDoc(doc.id); }} className="hover:text-red-500 transition-colors opacity-30">✕</span>
                      </button>
                    ))}
-                   <input type="file" multiple accept="application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-                   <button onClick={() => fileInputRef.current?.click()} className="h-8 px-4 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-black text-[8px] uppercase tracking-widest hover:bg-cyan-400 hover:text-black transition-all shrink-0 ml-2">Cargar PDF</button>
+                   <input type="file" multiple accept="application/pdf,.docx" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                   <button onClick={() => fileInputRef.current?.click()} className="h-8 px-4 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-black text-[8px] uppercase tracking-widest hover:bg-cyan-400 hover:text-black transition-all shrink-0 ml-2">Cargar Archivos</button>
                 </div>
                 <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.5em] shrink-0">Document Center</div>
              </header>
 
              <div className="flex-1 flex flex-col bg-[#0f172a] relative h-full">
-                {activeDoc?.url ? (
-                   <iframe src={`${activeDoc.url}#toolbar=0&navpanes=0&scrollbar=0`} className="absolute inset-0 w-full h-full border-none" title={activeDoc.title} />
+                {activeDoc ? (
+                   activeDoc.type === 'pdf' ? (
+                     <iframe src={`${activeDoc.url}#toolbar=0&navpanes=0&scrollbar=0`} className="absolute inset-0 w-full h-full border-none" title={activeDoc.title} />
+                   ) : (
+                     <div className="absolute inset-0 w-full h-full overflow-y-auto p-12 bg-white text-black custom-scrollbar selection:bg-cyan-200">
+                        <div className="max-w-3xl mx-auto prose prose-sm" dangerouslySetInnerHTML={{ __html: activeDoc.html || '' }} />
+                     </div>
+                   )
                 ) : (
                    <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
                       <div className="w-16 h-16 rounded-full border border-white/5 flex items-center justify-center mb-6 opacity-20 text-4xl">📁</div>
-                      <h3 className="text-base font-black text-white/20 uppercase tracking-widest mb-1">Visor Persistente</h3>
-                      <p className="text-[9px] text-white/10 font-bold max-w-[200px] leading-relaxed">Arrastra o selecciona tus archivos PDF. Se guardarán automáticamente en tu navegador para la próxima sesión.</p>
+                      <h3 className="text-base font-black text-white/20 uppercase tracking-widest mb-1">Visor de Archivos</h3>
+                      <p className="text-[9px] text-white/10 font-bold max-w-[200px] leading-relaxed">Soporta PDF y Word (.docx). Tus archivos se guardan localmente para la próxima sesión.</p>
                    </div>
                 )}
              </div>
@@ -441,6 +491,9 @@ export default function RoomPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .prose img { max-width: 100%; height: auto; }
+        .prose p { margin-bottom: 1em; line-height: 1.6; }
+        .prose h1, .prose h2, .prose h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
       `}</style>
     </div>
   );

@@ -1,0 +1,12 @@
+{
+  "title": "Carta de las Naciones Unidas",
+  "articles": [
+    {"id": 1, "text": "Los Propósitos de las Naciones Unidas son: 1. Mantener la paz y la seguridad internacionales..."},
+    {"id": 2, "text": "Para la realización de los Propósitos consignados en el Artículo 1, la Organización y sus Miembros procederán de acuerdo con los siguientes Principios: 1. La Organización esta basada en el principio de la igualdad soberana de todos sus Miembros..."},
+    {"id": 33, "text": "Las partes en una controversia cuya continuación sea susceptible de peligrar el mantenimiento de la paz y la seguridad internacionales tratarán de buscarle solución, ante todo, mediante la negociación, la investigación, la mediación, la conciliación, el arbitraje, el arreglo judicial..."},
+    {"id": 39, "text": "El Consejo de Seguridad determinará la existencia de toda amenaza a la paz, quebrantamiento de la paz o acto de agresión..."},
+    {"id": 41, "text": "El Consejo de Seguridad podrá decidir qué medidas que no impliquen el uso de la fuerza armada han de emplearse para dar efecto a sus decisiones..."},
+    {"id": 42, "text": "Si el Consejo de Seguridad considerare que las medidas de que trata el Artículo 41 pueden ser inadecuadas... podrá ejercer, por medio de fuerzas aéreas, navales o terrestres, la acción que sea necesaria..."},
+    {"id": 51, "text": "Ninguna disposición de esta Carta restringirá el derecho inmanente de legítima defensa, individual o colectiva, en caso de ataque armado contra un Miembro de las Naciones Unidas..."}
+  ]
+}

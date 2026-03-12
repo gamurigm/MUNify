@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from domain.state import AgentState
 from services.llm import tavily, scribe_llm, critic_llm
+from services.knowledge_base import knowledge_base
 from utils.converters import load_latex_template, latex_to_html
 from notebook_service import notebook_service
 
@@ -26,19 +27,21 @@ async def researcher_node(state: AgentState):
 # [LIBRARY] 2. Agente de Contexto
 @logfire.instrument("Librarian Node")
 async def librarian_node(state: AgentState):
-    print("--- CONSULTANDO CONTEXTO LEGAL/HISTÓRICO ---")
+    print("--- CONSULTANDO CONTEXTO LEGAL/HISTÓRICO (Knowledge Base) ---")
     committee = str(state.get("committee", "")).upper()
+    topic = state["topic"]
+    
+    # --- RAG: Consulta a la base de conocimiento de tratados ---
+    search_query = f"{committee} {topic}"
+    legal_context = knowledge_base.search(search_query)
     
     context = [
-        "Carta de las Naciones Unidas, Capítulo VI: Arreglo pacífico de controversias.",
-        "Resolución 75/1 de la Asamblea General: Declaración sobre la conmemoración del 75º aniversario de la ONU."
-    ]
+        "Capítulo VI de la Carta de la ONU: Arreglo pacífico de controversias.",
+    ] + legal_context
     
     if "SEGURIDAD" in committee or "SECURITY" in committee:
-        context.append("Resolución 1373 (2001) del Consejo de Seguridad sobre amenazas a la paz.")
-        context.append("Estatuto de Roma de la Corte Penal Internacional.")
+        context.append("Resolución 1373 (2001) del Consejo de Seguridad.")
     elif "DERECHOS" in committee or "HUMAN" in committee:
-        context.append("Declaración Universal de los Derechos Humanos.")
         context.append("Pacto Internacional de Derechos Civiles y Políticos.")
     elif "AMBIENTE" in committee or "ENVIRONMENT" in committee or "PNUMA" in committee:
         context.append("Acuerdo de París sobre el cambio climático.")

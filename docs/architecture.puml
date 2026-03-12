@@ -1,0 +1,82 @@
+@startuml MUNify_Architecture
+!theme reddress-darkblue
+
+skinparam componentStyle rectangle
+skinparam databaseBackgroundColor #2C3E50
+skinparam nodeBackgroundColor #34495E
+skinparam componentBackgroundColor #1E272E
+skinparam arrowColor #00D2D3
+skinparam fontColor white
+
+title Arquitectura del Sistema MUNify (Microservicios)
+
+actor "Representante\n(Delegado / Mesa)" as User
+
+node "Frontend (Client Side)" {
+
+    component "Web UI\nNext.js / React" as WebUI
+    component "Drafting Studio\nTiptap Editor" as Editor
+    component "State Management\nZustand / Hooks" as State
+
+    database "IndexedDB\nLocal Storage" as ClientDB
+}
+
+node "Backend Services" {
+
+    component "Core Backend\nSpring Boot / Java\nREST :8080" as CoreBackend
+
+    component "AI Agents\nFastAPI / Python\nREST :8000" as AIAgents
+    component "LangGraph Workflow" as LangGraph
+    component "Librarian Node\n(RAG Context)" as Librarian
+    component "LLM Nodes\n(Scribe / Critic)" as LLMNodes
+    component "Investigator Node\n(Tavily Search)" as SearchNode
+    component "LaTeX Compiler\npdflatex" as Latex
+
+    component "Collaboration Server\nNode.js + Yjs\nWS :1234" as CollabServer
+}
+
+node "Data Layer (Docker / WSL)" {
+
+    database "PostgreSQL\nRelational Data" as Postgres
+    database "Redis\nCache & Sessions" as Redis
+    database "Knowledge Base\nJSON (Carta ONU, DDHH)" as JSON_KB
+}
+
+cloud "External Services" {
+
+    component "NVIDIA NIM\nLLMs (Llama3 / Mistral)" as NV_NIM
+    component "Tavily Search API\nReal-time News" as Tavily
+}
+
+' USER INTERACTION
+User --> WebUI : UI Interaction
+
+' FRONTEND INTERNAL
+WebUI --> Editor
+WebUI --> State
+Editor --> ClientDB : Local autosave
+
+' FRONTEND → BACKEND
+WebUI --> CoreBackend : REST API
+WebUI --> AIAgents : AI requests
+Editor --> CollabServer : WebSocket realtime editing
+
+' CORE BACKEND
+CoreBackend --> Postgres
+CoreBackend --> Redis
+
+' AI WORKFLOW
+AIAgents --> LangGraph
+LangGraph --> Librarian
+LangGraph --> LLMNodes
+LangGraph --> SearchNode
+LangGraph --> Latex
+
+' KNOWLEDGE & SEARCH
+Librarian --> JSON_KB
+SearchNode --> Tavily
+
+' LLM
+LLMNodes --> NV_NIM
+
+@enduml

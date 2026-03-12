@@ -34,10 +34,21 @@ from main import app as agent_workflow  # pyre-ignore
 from main import latex_to_html, html_to_latex  # pyre-ignore
 from notebook_service import notebook_service
 
+from fastapi.middleware.cors import CORSMiddleware # pyre-ignore
+
 app = FastAPI(
     title="MUNify AI Agents API",
     description="API for triggering LangGraph AI agents to generate MUN documents",
     version="2.0.0"
+)
+
+# Enable CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Instrument FastAPI with Logfire
@@ -96,6 +107,58 @@ async def generate_document(request: GenerateRequest):
         }
         return GenerateResponse(**response_data) # pyre-ignore
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+from services.llm import fast_llm # pyre-ignore
+from services.knowledge_base import knowledge_base # pyre-ignore
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage # pyre-ignore
+
+class ChatRequestMsg(BaseModel):
+    role: str
+    text: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatRequestMsg]
+    topic: str
+    country: str
+    committee: str
+
+class ChatResponse(BaseModel):
+    response: str
+
+@app.post("/api/v1/chat", response_model=ChatResponse)
+async def fast_chat_endpoint(request: ChatRequest):
+    try:
+        logfire.info(f"Chat request received: {request.committee} - {request.topic}")
+        # Recuperar contexto RAG ultra rápido
+        search_query = f"{request.committee} {request.topic}"
+        legal_context = knowledge_base.search(search_query)
+        context_str = "\n".join(legal_context)
+        
+        system_prompt = f"""Eres un Asesor Diplomático IA experto en Naciones Unidas de muy alto nivel.
+Ayudas al delegado de {request.country} en el comité {request.committee} sobre '{request.topic}'.
+Habla de forma extremadamente profesional, concisa y diplomática. Siempre cita los siguientes 
+tratados si están relacionados con la consulta:
+--- CONTEXTO LEGAL DE LA ONU ---
+{context_str}
+---------------------------------"""
+        
+        # Convertir historial
+        langchain_msgs = [SystemMessage(content=system_prompt)]
+        for m in request.messages[-5:]:  # pyre-ignore
+            # Sanitizar texto para evitar errores de proxy/encoding
+            clean_text = str(m.text).replace('\u202f', ' ').replace('\u200b', '')
+            if m.role == "user":
+                langchain_msgs.append(HumanMessage(content=clean_text))
+            else:
+                langchain_msgs.append(AIMessage(content=clean_text))
+                
+        # Llamar a nemotron (fast_llm)
+        response = await fast_llm.ainvoke(langchain_msgs)
+        return ChatResponse(**{"response": str(response.content)}) # pyre-ignore
+    except Exception as e:
+        logfire.error(f"Chat Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
