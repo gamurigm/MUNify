@@ -6,6 +6,7 @@ build/
 dist/
 venv/
 .venv/
+conv_venv/
 __pycache__/
 *.pyc
 .gradle/
@@ -47,6 +48,10 @@ docs/scratch/
 *.swo
 .DS_Store
 
-# UI Assets (Optional: remove if you want to keep screenshots in git)
-# *.png
-# *.webp
+# UI Assets
+*.png
+!MUNify-main-v2.png
+*.webp
+*.jpg
+*.avif
+*.pdf
