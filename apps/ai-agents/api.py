@@ -124,15 +124,31 @@ class ChatRequest(BaseModel):
     country: str
     committee: str
 
+class CitedArticle(BaseModel):
+    treaty: str
+    article_id: str
+    text: str
+
 class ChatResponse(BaseModel):
     response: str
+    cited_articles: Optional[List[CitedArticle]] = None
 
 @app.post("/api/v1/chat", response_model=ChatResponse)
 async def fast_chat_endpoint(request: ChatRequest):
     try:
         logfire.info(f"Chat request received: {request.committee} - {request.topic}")
-        # Recuperar contexto RAG ultra rápido
-        search_query = f"{request.committee} {request.topic}"
+        
+        # Build search from BOTH the topic AND the user's last message
+        last_user_msg = ""
+        for m in reversed(request.messages):  # pyre-ignore
+            if m.role == "user":
+                last_user_msg = m.text
+                break
+        
+        search_query = f"{request.committee} {request.topic} {last_user_msg}"
+        
+        # Get RAG results as raw structured data
+        raw_articles = knowledge_base.search_structured(search_query)  # pyre-ignore
         legal_context = knowledge_base.search(search_query)
         context_str = "\n".join(legal_context)
         
@@ -142,12 +158,12 @@ Habla de forma extremadamente profesional, concisa y diplomática. Siempre cita 
 tratados si están relacionados con la consulta:
 --- CONTEXTO LEGAL DE LA ONU ---
 {context_str}
----------------------------------"""
+---------------------------------
+IMPORTANTE: Cuando cites artículos, menciona el tratado y número exacto."""
         
         # Convertir historial
         langchain_msgs = [SystemMessage(content=system_prompt)]
         for m in request.messages[-5:]:  # pyre-ignore
-            # Sanitizar texto para evitar errores de proxy/encoding
             clean_text = str(m.text).replace('\u202f', ' ').replace('\u200b', '')
             if m.role == "user":
                 langchain_msgs.append(HumanMessage(content=clean_text))
@@ -156,7 +172,11 @@ tratados si están relacionados con la consulta:
                 
         # Llamar a nemotron (fast_llm)
         response = await fast_llm.ainvoke(langchain_msgs)
-        return ChatResponse(**{"response": str(response.content)}) # pyre-ignore
+        
+        # Build cited articles list from RAG results
+        cited = [CitedArticle(treaty=a["treaty"], article_id=str(a["id"]), text=a["text"]) for a in raw_articles[:6]]  # pyre-ignore
+        
+        return ChatResponse(**{"response": str(response.content), "cited_articles": cited}) # pyre-ignore
     except Exception as e:
         logfire.error(f"Chat Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

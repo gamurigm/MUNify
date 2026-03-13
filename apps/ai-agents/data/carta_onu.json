@@ -1,12 +1,449 @@
 {
   "title": "Carta de las Naciones Unidas",
   "articles": [
-    {"id": 1, "text": "Los Propósitos de las Naciones Unidas son: 1. Mantener la paz y la seguridad internacionales..."},
-    {"id": 2, "text": "Para la realización de los Propósitos consignados en el Artículo 1, la Organización y sus Miembros procederán de acuerdo con los siguientes Principios: 1. La Organización esta basada en el principio de la igualdad soberana de todos sus Miembros..."},
-    {"id": 33, "text": "Las partes en una controversia cuya continuación sea susceptible de peligrar el mantenimiento de la paz y la seguridad internacionales tratarán de buscarle solución, ante todo, mediante la negociación, la investigación, la mediación, la conciliación, el arbitraje, el arreglo judicial..."},
-    {"id": 39, "text": "El Consejo de Seguridad determinará la existencia de toda amenaza a la paz, quebrantamiento de la paz o acto de agresión..."},
-    {"id": 41, "text": "El Consejo de Seguridad podrá decidir qué medidas que no impliquen el uso de la fuerza armada han de emplearse para dar efecto a sus decisiones..."},
-    {"id": 42, "text": "Si el Consejo de Seguridad considerare que las medidas de que trata el Artículo 41 pueden ser inadecuadas... podrá ejercer, por medio de fuerzas aéreas, navales o terrestres, la acción que sea necesaria..."},
-    {"id": 51, "text": "Ninguna disposición de esta Carta restringirá el derecho inmanente de legítima defensa, individual o colectiva, en caso de ataque armado contra un Miembro de las Naciones Unidas..."}
+    {
+      "id": 1,
+      "text": "Los Propósitos de las Naciones Unidas son: 1. Mantener la paz y la seguridad internacionales, y con tal fin: tomar medidas colectivas eficaces para prevenir y eliminar amenazas a la paz, y para suprimir actos de agresión u otros quebrantamientos de la paz; y lograr por medios pacíficos, y de conformidad con los principios de la justicia y del derecho internacional, el ajuste o arreglo de controversias o situaciones internacionales susceptibles de conducir a quebrantamientos de la paz; 2. Fomentar entre las naciones relaciones de amistad basadas en el respeto al principio de la igualdad de derechos y al de la libre determinación de los pueblos, y tomar otros medidas adecuadas para fortalecer la paz universal; 3. Realizar la cooperación internacional en la solución de problemas internacionales de carácter económico, social, cultural o humanitario, y en el desarrollo y estímulo del respeto a los derechos humanos y a las libertades fundamentales de todos, sin hacer distinción por motivos de raza, sexo, idioma o religión; 4. Servir de centro que armonice los esfuerzos de las naciones por alcanzar estos propósitos comunes."
+    },
+    {
+      "id": 2,
+      "text": "Para la realización de los Propósitos consignados en el Artículo 1, la Organización y sus Miembros procederán de acuerdo con los siguientes Principios: 1. La Organización está basada en el principio de la igualdad soberana de todos sus Miembros. 2. Los Miembros de la Organización, a fin de asegurarse los derechos y beneficios inherentes a su condición de tales, cumplirán de buena fe las obligaciones contraídas por ellos de conformidad con esta Carta. 3. Los Miembros de la Organización arreglarán sus controversias internacionales por medios pacíficos de tal manera que no se pongan en peligro ni la paz y la seguridad internacionales ni la justicia. 4. Los Miembros de la Organización, en sus relaciones internacionales, se abstendrán de recurrir a la amenaza o al uso de la fuerza contra la integridad territorial o la independencia política de cualquier Estado, o en cualquier otra forma incompatible con los Propósitos de las Naciones Unidas. 5. Los Miembros de la Organización prestarán a ésta toda clase de ayuda en cualquier acción que ejerza de conformidad con esta Carta. 6. La Organización hará que los Estados que no son Miembros de las Naciones Unidas se conduzcan de acuerdo con estos Principios en la medida que sea necesaria para mantener la paz y la seguridad internacionales. 7. Ninguna disposición de esta Carta autorizará a las Naciones Unidas a intervenir en los asuntos que son esencialmente de la jurisdicción interna de los Estados."
+    },
+    {
+      "id": 3,
+      "text": "Son Miembros originarios de las Naciones Unidas los Estados que habiendo participado en la Conferencia de las Naciones Unidas sobre Organización Internacional celebrada en San Francisco, o que habiendo firmado previamente la Declaración de las Naciones Unidas de 1 de enero de 1942, suscriban esta Carta y la ratifiquen de conformidad con el Artículo 110."
+    },
+    {
+      "id": 4,
+      "text": "Podrán ser Miembros de las Naciones Unidas todos los demás Estados amantes de la paz que acepten las obligaciones consignadas en esta Carta, y que, a juicio de la Organización, estén capacitados para cumplir dichas obligaciones y se hallen dispuestos a hacerlo."
+    },
+    {
+      "id": 5,
+      "text": "La admisión de tales Estados como Miembros de las Naciones Unidas se efectuará por decisión de la Asamblea General a recomendación del Consejo de Seguridad."
+    },
+    {
+      "id": 6,
+      "text": "Todo Miembro de las Naciones Unidas que haya sido objeto de acción preventiva o coercitiva por parte del Consejo de Seguridad podrá ser suspendido por la Asamblea General, a recomendación del Consejo de Seguridad, del ejercicio de los derechos y privilegios inherentes a su calidad de Miembro. El ejercicio de tales derechos y privilegios podrá ser restituido por el Consejo de Seguridad."
+    },
+    {
+      "id": 7,
+      "text": "1. Se establecen como órganos principales de las Naciones Unidas: una Asamblea General, un Consejo de Seguridad, un Consejo Económico y Social, un Consejo de Administración Fiduciaria, una Corte Internacional de Justicia y una Secretaría. 2. Se podrán establecer, de acuerdo con las disposiciones de la presente Carta, los órganos subsidiarios que se estimen necesarios."
+    },
+    {
+      "id": 8,
+      "text": "La Organización no establecerá restricciones en cuanto a la elegibilidad de hombres y mujeres para participar en condiciones de igualdad y en cualquier carácter en las funciones de sus órganos principales y subsidiarios."
+    },
+    {
+      "id": 9,
+      "text": "1. La Asamblea General estará integrada por todos los Miembros de las Naciones Unidas. 2. Ningún Miembro podrá tener más de cinco representantes en la Asamblea General."
+    },
+    {
+      "id": 10,
+      "text": "La Asamblea General podrá discutir cualesquier asuntos o cuestiones dentro de los límites de esta Carta o que se refieran a los poderes y funciones de cualquiera de los órganos creados por esta Carta, y salvo lo dispuesto en el Artículo 12 podrá hacer recomendaciones sobre tales asuntos o cuestiones a los Miembros de las Naciones Unidas o al Consejo de Seguridad o a éste y a aquéllos."
+    },
+    {
+      "id": 11,
+      "text": "1. La Asamblea General podrá considerar los principios generales de la cooperación en el mantenimiento de la paz y la seguridad internacionales, incluso los principios que rigen el desarme y la regulación de los armamentos, y podrá también hacer recomendaciones respecto de tales principios a los Miembros o al Consejo de Seguridad o a éste y a aquéllos. 2. La Asamblea General podrá discutir toda cuestión relativa al mantenimiento de la paz y la seguridad internacionales que presente a su consideración cualquier Miembro de las Naciones Unidas o el Consejo de Seguridad, y podrá hacer recomendaciones acerca de tales cuestiones al Estado o Estados interesados o al Consejo de Seguridad."
+    },
+    {
+      "id": 12,
+      "text": "1. Mientras el Consejo de Seguridad esté desempeñando las funciones que le asigna esta Carta con respecto a una controversia o situación, la Asamblea General no hará recomendación alguna sobre tal controversia o situación, a no ser que lo solicite el Consejo de Seguridad. 2. El Secretario General, con el consentimiento del Consejo de Seguridad, informará a la Asamblea General, en cada período de sesiones, sobre todo asunto relativo al mantenimiento de la paz y la seguridad internacionales que estuviere tratando el Consejo de Seguridad."
+    },
+    {
+      "id": 13,
+      "text": "1. La Asamblea General promoverá estudios y hará recomendaciones para los fines siguientes: a. fomentar la cooperación internacional en el campo político e impulsar el desarrollo progresivo del derecho internacional y su codificación; b. fomentar la cooperación internacional en materias de carácter económico, social, cultural, educativo y sanitario y ayudar a hacer efectivos los derechos humanos y las libertades fundamentales de todos, sin hacer distinción por motivos de raza, sexo, idioma o religión."
+    },
+    {
+      "id": 14,
+      "text": "Salvo lo dispuesto en el Artículo 12, la Asamblea General podrá recomendar medidas para el arreglo pacífico de cualesquiera situaciones, sea cual fuere su origen, que a juicio de la Asamblea General puedan perjudicar el bienestar general o las relaciones amistosas entre naciones."
+    },
+    {
+      "id": 15,
+      "text": "1. La Asamblea General recibirá y considerará informes anuales y especiales del Consejo de Seguridad. Estos informes comprenderán una relación de las medidas que el Consejo de Seguridad haya decidido aplicar o haya aplicado para mantener la paz y la seguridad internacionales. 2. La Asamblea General recibirá y considerará informes de los demás órganos de las Naciones Unidas."
+    },
+    {
+      "id": 16,
+      "text": "La Asamblea General desempeñará, con respecto al régimen internacional de administración fiduciaria, las funciones que se le atribuyen conforme a los Capítulos XII y XIII, incluso la aprobación de los acuerdos de administración fiduciaria de zonas no designadas como estratégicas."
+    },
+    {
+      "id": 17,
+      "text": "1. La Asamblea General examinará y aprobará el presupuesto de la Organización. 2. Los miembros sufragarán los gastos de la Organización en la proporción que determine la Asamblea General. 3. La Asamblea General considerará y aprobará los arreglos financieros y presupuestarios que se celebren con los organismos especializados."
+    },
+    {
+      "id": 18,
+      "text": "1. Cada Miembro de la Asamblea General tendrá un voto. 2. Las decisiones de la Asamblea General en cuestiones importantes se tomarán por el voto de una mayoría de dos tercios de los miembros presentes y votantes. Estas cuestiones comprenderán: las recomendaciones relativas al mantenimiento de la paz y la seguridad internacionales, la elección de los miembros no permanentes del Consejo de Seguridad, la elección de los miembros del Consejo Económico y Social, la admisión de nuevos Miembros, la suspensión de los derechos y privilegios de los Miembros, la expulsión de Miembros, las cuestiones relativas al funcionamiento del régimen de administración fiduciaria y las cuestiones presupuestarias. 3. Las decisiones sobre otras cuestiones se tomarán por la mayoría de los miembros presentes y votantes."
+    },
+    {
+      "id": 19,
+      "text": "Todo Miembro de las Naciones Unidas que esté en mora en el pago de sus cuotas financieras para los gastos de la Organización, no tendrá voto en la Asamblea General cuando la suma adeudada sea igual o superior al total de las cuotas adeudadas por los dos años anteriores completos."
+    },
+    {
+      "id": 20,
+      "text": "La Asamblea General se reunirá anualmente en sesiones ordinarias y, cada vez que las circunstancias lo exijan, en sesiones extraordinarias. El Secretario General convocará a sesiones extraordinarias a solicitud del Consejo de Seguridad o de la mayoría de los Miembros de las Naciones Unidas."
+    },
+    {
+      "id": 21,
+      "text": "La Asamblea General dictará su propio reglamento y elegirá su Presidente para cada período de sesiones."
+    },
+    {
+      "id": 22,
+      "text": "La Asamblea General podrá establecer los organismos subsidiarios que estime necesarios para el desempeño de sus funciones."
+    },
+    {
+      "id": 23,
+      "text": "1. El Consejo de Seguridad se compondrá de quince miembros de las Naciones Unidas. La República de China, Francia, la Unión de las Repúblicas Socialistas Soviéticas, el Reino Unido de la Gran Bretaña e Irlanda del Norte y los Estados Unidos de América, serán miembros permanentes del Consejo de Seguridad. La Asamblea General elegirá otros diez Miembros de las Naciones Unidas que serán miembros no permanentes del Consejo de Seguridad."
+    },
+    {
+      "id": 24,
+      "text": "1. A fin de asegurar acción rápida y eficaz por parte de las Naciones Unidas, sus Miembros confieren al Consejo de Seguridad la responsabilidad primordial de mantener la paz y la seguridad internacionales, y reconocen que el Consejo de Seguridad actúa a nombre de ellos al desempeñar las funciones que le impone aquella responsabilidad. 2. En el desempeño de estas funciones, el Consejo de Seguridad procederá de acuerdo con los Propósitos y Principios de las Naciones Unidas."
+    },
+    {
+      "id": 25,
+      "text": "Los Miembros de las Naciones Unidas convienen en aceptar y cumplir las decisiones del Consejo de Seguridad de acuerdo con esta Carta."
+    },
+    {
+      "id": 26,
+      "text": "1. El Consejo de Seguridad presentará a la Asamblea General para su consideración informes anuales y, cuando fuere necesario, informes especiales."
+    },
+    {
+      "id": 27,
+      "text": "1. Cada miembro del Consejo de Seguridad tendrá un voto. 2. Las decisiones del Consejo de Seguridad sobre cuestiones de procedimiento serán tomadas por el voto afirmativo de nueve miembros. 3. Las decisiones del Consejo de Seguridad sobre todas las demás cuestiones serán tomadas por el voto afirmativo de nueve miembros, incluso los votos afirmativos de todos los miembros permanentes."
+    },
+    {
+      "id": 28,
+      "text": "El Consejo de Seguridad será organizado de modo que pueda funcionar continuamente. Con tal fin, cada miembro del Consejo de Seguridad tendrá en todo momento su representante en la sede de la Organización."
+    },
+    {
+      "id": 29,
+      "text": "El Consejo de Seguridad dictará su propio reglamento, el cual establecerá el método de elegir su Presidente."
+    },
+    {
+      "id": 30,
+      "text": "El Consejo de Seguridad podrá establecer los organismos subsidiarios que estime necesarios para el desempeño de sus funciones."
+    },
+    {
+      "id": 31,
+      "text": "Cualquier Miembro de las Naciones Unidas que no sea miembro del Consejo de Seguridad podrá participar sin derecho a voto en la discusión de toda cuestión llevada ante el Consejo de Seguridad cuando éste considere que los intereses de ese Miembro están afectados de manera especial."
+    },
+    {
+      "id": 32,
+      "text": "El Miembro de las Naciones Unidas que no tenga asiento en el Consejo de Seguridad o el Estado que no sea Miembro de las Naciones Unidas, si fuere parte en una controversia que esté considerando el Consejo de Seguridad, será invitado a participar sin derecho a voto en las discusiones relativas a dicha controversia."
+    },
+    {
+      "id": 33,
+      "text": "1. Las partes en una controversia cuya continuación sea susceptible de poner en peligro el mantenimiento de la paz y la seguridad internacionales tratarán de buscarle solución, ante todo, mediante la negociación, la investigación, la mediación, la conciliación, el arbitraje, el arreglo judicial, el recurso a organismos o acuerdos regionales u otros medios pacíficos de su elección. 2. El Consejo de Seguridad, si lo estimare necesario, instará a las partes a que arreglen sus controversias por dichos medios."
+    },
+    {
+      "id": 34,
+      "text": "El Consejo de Seguridad podrá investigar toda controversia, o toda situación susceptible de conducir a fricción internacional o dar origen a una controversia, a fin de determinar si la prolongación de tal controversia o situación puede poner en peligro el mantenimiento de la paz y la seguridad internacionales."
+    },
+    {
+      "id": 35,
+      "text": "1. Todo Miembro de las Naciones Unidas podrá llevar cualquiera controversia, o cualquiera situación de la naturaleza expresada en el Artículo 34, a la atención del Consejo de Seguridad o de la Asamblea General. 2. Un Estado que no es Miembro de las Naciones Unidas podrá llevar a la atención del Consejo de Seguridad o de la Asamblea General toda controversia en que sea parte, si acepta de antemano las obligaciones de arreglo pacífico establecidas en esta Carta."
+    },
+    {
+      "id": 36,
+      "text": "1. El Consejo de Seguridad podrá, en cualquier estado en que se encuentre una controversia de la naturaleza de que trata el Artículo 33 o una situación de índole semejante, recomendar los procedimientos o métodos de ajuste que sean apropiados. 2. El Consejo de Seguridad deberá tomar en consideración todo procedimiento que las partes hayan adoptado para el arreglo de la controversia. 3. Al hacer recomendaciones de acuerdo con este Artículo, el Consejo de Seguridad deberá tomar también en consideración que las controversias de orden jurídico, por regla general, deben ser sometidas por las partes a la Corte Internacional de Justicia."
+    },
+    {
+      "id": 37,
+      "text": "1. Si las partes en una controversia de la naturaleza definida en el Artículo 33 no lograren arreglarla por los medios indicados en dicho Artículo, la someterán al Consejo de Seguridad. 2. Si el Consejo de Seguridad estimare que la continuación de la controversia es realmente susceptible de poner en peligro el mantenimiento de la paz y la seguridad internacionales, el Consejo de Seguridad decidirá si ha de proceder de conformidad con el Artículo 36 o si ha de recomendar los términos de arreglo que considere apropiados."
+    },
+    {
+      "id": 38,
+      "text": "Sin perjuicio de lo dispuesto en los Artículos 33 a 37, el Consejo de Seguridad podrá, si así lo solicitan todas las partes en una controversia, hacerles recomendaciones a efecto de que se llegue a un arreglo pacífico."
+    },
+    {
+      "id": 39,
+      "text": "El Consejo de Seguridad determinará la existencia de toda amenaza a la paz, quebrantamiento de la paz o acto de agresión y hará recomendaciones o decidirá qué medidas serán tomadas de conformidad con los Artículos 41 y 42 para mantener o restablecer la paz y la seguridad internacionales."
+    },
+    {
+      "id": 40,
+      "text": "El Consejo de Seguridad, a fin de evitar que la situación se agrave, podrá, antes de hacer las recomendaciones o decidir las medidas de que trata el Artículo 39, instar a las partes interesadas a que cumplan con las medidas provisionales que juzgue necesarias o aconsejables. Tales medidas provisionales no perjudicarán los derechos, las reclamaciones o la posición de las partes interesadas."
+    },
+    {
+      "id": 41,
+      "text": "El Consejo de Seguridad podrá decidir qué medidas que no impliquen el uso de la fuerza armada han de emplearse para hacer efectivas sus decisiones, y podrá instar a los Miembros de las Naciones Unidas a que apliquen dichas medidas, que podrán comprender la interrupción total o parcial de las relaciones económicas y de las comunicaciones ferroviarias, marítimas, aéreas, postales, telegráficas, radioeléctricas, y otros medios de comunicación, así como la ruptura de relaciones diplomáticas."
+    },
+    {
+      "id": 42,
+      "text": "Si el Consejo de Seguridad estimare que las medidas de que trata el Artículo 41 pueden ser inadecuadas o han demostrado serlo, podrá ejercer, por medio de fuerzas aéreas, navales o terrestres, la acción que sea necesaria para mantener o restablecer la paz y la seguridad internacionales. Tal acción podrá comprender demostraciones, bloqueos y otras operaciones ejecutadas por fuerzas aéreas, navales o terrestres de Miembros de las Naciones Unidas."
+    },
+    {
+      "id": 43,
+      "text": "1. Todos los Miembros de las Naciones Unidas, con el fin de contribuir al mantenimiento de la paz y la seguridad internacionales, se comprometen a poner a disposición del Consejo de Seguridad, cuando éste lo solicite, y de conformidad con un convenio especial o con convenios especiales, las fuerzas armadas, la ayuda y las facilidades, incluso el derecho de paso, que sean necesarias para el propósito de mantener la paz y la seguridad internacionales."
+    },
+    {
+      "id": 44,
+      "text": "Cuando el Consejo de Seguridad haya decidido hacer uso de la fuerza, antes de requerir a un Miembro que no esté representado en él a que provea fuerzas armadas en cumplimiento de las obligaciones contraídas en virtud del Artículo 43, invitará a dicho Miembro, si éste así lo deseare, a participar en las decisiones del Consejo de Seguridad relativas al empleo de contingentes de fuerzas armadas de dicho Miembro."
+    },
+    {
+      "id": 45,
+      "text": "A fin de que la Organización pueda tomar medidas militares urgentes, sus Miembros mantendrán contingentes de fuerzas aéreas nacionales inmediatamente disponibles para la ejecución combinada de una acción coercitiva internacional."
+    },
+    {
+      "id": 46,
+      "text": "Los planes para el empleo de la fuerza armada serán hechos por el Consejo de Seguridad con la ayuda del Comité de Estado Mayor."
+    },
+    {
+      "id": 47,
+      "text": "1. Se establecerá un Comité de Estado Mayor para asesorar y asistir al Consejo de Seguridad en todas las cuestiones relativas a las necesidades militares del Consejo de Seguridad para el mantenimiento de la paz y la seguridad internacionales, al empleo y comando de las fuerzas puestas a su disposición, a la regulación de los armamentos y al posible desarme. 2. El Comité de Estado Mayor estará integrado por los Jefes de Estado Mayor de los miembros permanentes del Consejo de Seguridad o sus representantes."
+    },
+    {
+      "id": 48,
+      "text": "La acción requerida para llevar a cabo las decisiones del Consejo de Seguridad para el mantenimiento de la paz y la seguridad internacionales será ejercida por todos los Miembros de las Naciones Unidas o por algunos de ellos, según lo determine el Consejo de Seguridad."
+    },
+    {
+      "id": 49,
+      "text": "Los Miembros de las Naciones Unidas se prestarán ayuda mutua para llevar a cabo las medidas dispuestas por el Consejo de Seguridad."
+    },
+    {
+      "id": 50,
+      "text": "Si el Consejo de Seguridad tomare medidas preventivas o coercitivas contra un Estado, cualquier otro Estado, sea o no Miembro de las Naciones Unidas, que se confrontare con problemas económicos especiales originados por la ejecución de dichas medidas, tendrá el derecho de consultar al Consejo de Seguridad acerca de la solución de esos problemas."
+    },
+    {
+      "id": 51,
+      "text": "Ninguna disposición de esta Carta menoscabará el derecho inmanente de legítima defensa, individual o colectiva, en caso de ataque armado contra un Miembro de las Naciones Unidas, hasta tanto que el Consejo de Seguridad haya tomado las medidas necesarias para mantener la paz y la seguridad internacionales. Las medidas tomadas por los Miembros en ejercicio del derecho de legítima defensa serán comunicadas inmediatamente al Consejo de Seguridad."
+    },
+    {
+      "id": 52,
+      "text": "1. Ninguna disposición de esta Carta se opone a la existencia de acuerdos u organismos regionales cuyo fin sea entender en los asuntos relativos al mantenimiento de la paz y la seguridad internacionales y susceptibles de acción regional, siempre que dichos acuerdos u organismos, y sus actividades, sean compatibles con los Propósitos y Principios de las Naciones Unidas."
+    },
+    {
+      "id": 53,
+      "text": "1. El Consejo de Seguridad utilizará dichos acuerdos u organismos regionales, si a ello hubiere lugar, para aplicar medidas coercitivas bajo su autoridad. Sin embargo, no se aplicarán medidas coercitivas en virtud de acuerdos regionales o por organismos regionales sin autorización del Consejo de Seguridad."
+    },
+    {
+      "id": 54,
+      "text": "Se deberá mantener en todo tiempo al Consejo de Seguridad plenamente informado de las actividades emprendidas o proyectadas de conformidad con acuerdos regionales o por organismos regionales con el propósito de mantener la paz y la seguridad internacionales."
+    },
+    {
+      "id": 55,
+      "text": "1. Con miras a la creación de las condiciones de estabilidad y bienestar necesarias para las relaciones pacíficas y amistosas entre las naciones, basadas en el respeto al principio de la igualdad de derechos y al de la libre determinación de los pueblos, la Organización promoverá: a. niveles de vida más elevados, trabajo permanente para todos, y condiciones de progreso y desarrollo económico y social; b. la solución de problemas internacionales de carácter económico, social y sanitario; c. la cooperación internacional en el orden cultural y educativo; d. el respeto universal a los derechos humanos y a las libertades fundamentales de todos, sin hacer distinción por motivos de raza, sexo, idioma o religión, y la efectividad de tales derechos y libertades."
+    },
+    {
+      "id": 56,
+      "text": "Todos los Miembros se comprometen a tomar medidas conjunta o separadamente, en cooperación con la Organización, para la realización de los propósitos consignados en el Artículo 55."
+    },
+    {
+      "id": 57,
+      "text": "Los distintos organismos especializados establecidos por acuerdos intergubernamentales, que tengan amplias atribuciones internacionales definidas en sus estatutos, y relativas a materias de carácter económico, social, cultural, educativo, sanitario, y otras conexas, serán vinculados con la Organización de acuerdo con las disposiciones del Artículo 63."
+    },
+    {
+      "id": 58,
+      "text": "La Organización hará recomendaciones con el objeto de coordinar las normas de acción y las actividades de los organismos especializados."
+    },
+    {
+      "id": 59,
+      "text": "La Organización iniciará, cuando hubiere lugar, negociaciones entre los Estados interesados para crear los nuevos organismos especializados que fueren necesarios para la realización de los propósitos enunciados en el Artículo 55."
+    },
+    {
+      "id": 60,
+      "text": "La responsabilidad por el desempeño de las funciones de la Organización señaladas en este Capítulo corresponderá a la Asamblea General y, bajo la autoridad de ésta, al Consejo Económico y Social."
+    },
+    {
+      "id": 61,
+      "text": "1. El Consejo Económico y Social estará integrado por cincuenta y cuatro Miembros de las Naciones Unidas elegidos por la Asamblea General."
+    },
+    {
+      "id": 62,
+      "text": "1. El Consejo Económico y Social podrá hacer o iniciar estudios e informes con respecto a asuntos internacionales de carácter económico, social, cultural, educativo y sanitario, y otros asuntos conexos, y hacer recomendaciones sobre tales asuntos a la Asamblea General, a los Miembros de las Naciones Unidas y a los organismos especializados interesados."
+    },
+    {
+      "id": 63,
+      "text": "1. El Consejo Económico y Social podrá concertar con cualquiera de los organismos especializados de que trata el Artículo 57, acuerdos por medio de los cuales se establezcan las condiciones en que dichos organismos habrán de vincularse con la Organización. Tales acuerdos estarán sujetos a la aprobación de la Asamblea General."
+    },
+    {
+      "id": 64,
+      "text": "1. El Consejo Económico y Social podrá tomar las medidas apropiadas para obtener informes periódicos de los organismos especializados."
+    },
+    {
+      "id": 65,
+      "text": "El Consejo Económico y Social podrá suministrar información a la Asamblea General y prestar ayuda al Consejo de Seguridad cuando éste se lo solicite."
+    },
+    {
+      "id": 66,
+      "text": "1. El Consejo Económico y Social desempeñará las funciones que caigan dentro de su competencia en relación con el cumplimiento de las recomendaciones de la Asamblea General."
+    },
+    {
+      "id": 67,
+      "text": "1. Cada miembro del Consejo Económico y Social tendrá un voto. 2. Las decisiones del Consejo Económico y Social se tomarán por la mayoría de los miembros presentes y votantes."
+    },
+    {
+      "id": 68,
+      "text": "El Consejo Económico y Social establecerá comisiones de orden económico y social y para la promoción de los derechos humanos, así como las demás comisiones necesarias para el desempeño de sus funciones."
+    },
+    {
+      "id": 69,
+      "text": "El Consejo Económico y Social invitará a cualquier Miembro de las Naciones Unidas a participar, sin derecho a voto, en sus deliberaciones sobre cualquier asunto de particular interés para dicho Miembro."
+    },
+    {
+      "id": 70,
+      "text": "El Consejo Económico y Social podrá hacer arreglos para que representantes de los organismos especializados participen, sin derecho a voto, en sus deliberaciones y en las de las comisiones que establezca."
+    },
+    {
+      "id": 71,
+      "text": "El Consejo Económico y Social podrá hacer arreglos adecuados para celebrar consultas con organizaciones no gubernamentales que se ocupen en asuntos de la competencia del Consejo."
+    },
+    {
+      "id": 72,
+      "text": "1. El Consejo Económico y Social dictará su propio reglamento, el cual establecerá el método de elegir su Presidente."
+    },
+    {
+      "id": 73,
+      "text": "El régimen internacional de administración fiduciaria se establecerá bajo la autoridad de las Naciones Unidas para la administración y vigilancia de los territorios que se pongan bajo dicho régimen."
+    },
+    {
+      "id": 74,
+      "text": "Los objetivos básicos del régimen de administración fiduciaria serán: a. fomentar la paz y la seguridad internacionales; b. promover el adelanto político, económico, social y educativo de los habitantes de los territorios fideicometidos; c. promover el respeto a los derechos humanos y a las libertades fundamentales de todos; d. asegurar tratamiento igual para todos los Miembros de las Naciones Unidas y sus nacionales en materias de carácter social, económico y comercial."
+    },
+    {
+      "id": 75,
+      "text": "1. El régimen de administración fiduciaria se aplicará a los territorios de las siguientes categorías que se pongan bajo dicho régimen por medio de los correspondientes acuerdos: a. territorios actualmente bajo mandato; b. territorios que, como resultado de la segunda guerra mundial, fueren segregados de Estados enemigos; c. territorios voluntariamente colocados bajo este régimen por los Estados responsables de su administración."
+    },
+    {
+      "id": 76,
+      "text": "El régimen de administración fiduciaria no se aplicará a territorios que hayan adquirido la calidad de Miembros de las Naciones Unidas, cuyas relaciones entre sí se basarán en el respeto al principio de la igualdad soberana."
+    },
+    {
+      "id": 77,
+      "text": "Los términos de la administración fiduciaria para cada territorio que haya de colocarse bajo el régimen de administración fiduciaria, serán convenidos por los Estados directamente interesados."
+    },
+    {
+      "id": 78,
+      "text": "El régimen de administración fiduciaria no se aplicará a territorios que se hayan hecho Miembros de las Naciones Unidas."
+    },
+    {
+      "id": 79,
+      "text": "Los términos de la administración fiduciaria para cada territorio serán objeto de acuerdo entre los Estados directamente interesados."
+    },
+    {
+      "id": 80,
+      "text": "Los acuerdos sobre administración fiduciaria, incluidas las modificaciones y reformas, deberán ser aprobados según lo dispuesto en los Artículos 83 y 85."
+    },
+    {
+      "id": 81,
+      "text": "El acuerdo sobre administración fiduciaria contendrá en cada caso las condiciones en que se administrará el territorio fideicometido."
+    },
+    {
+      "id": 82,
+      "text": "Podrán designarse, en cualquier acuerdo sobre administración fiduciaria, una o más zonas estratégicas que comprendan parte o la totalidad del territorio fideicometido a que se refiera el acuerdo."
+    },
+    {
+      "id": 83,
+      "text": "1. Todas las funciones de las Naciones Unidas relativas a zonas estratégicas, incluso la de aprobar los términos de los acuerdos sobre administración fiduciaria, así como las modificaciones o reformas de los mismos, serán ejercidas por el Consejo de Seguridad."
+    },
+    {
+      "id": 84,
+      "text": "La autoridad administradora tendrá el deber de velar por que el territorio fideicometido contribuya al mantenimiento de la paz y la seguridad internacionales."
+    },
+    {
+      "id": 85,
+      "text": "1. Las funciones de la Organización en lo que respecta a los acuerdos sobre administración fiduciaria relativos a todas las zonas no designadas como estratégicas, incluso la de aprobar los términos de los acuerdos sobre administración fiduciaria y las modificaciones o reformas de los mismos, serán ejercidas por la Asamblea General."
+    },
+    {
+      "id": 86,
+      "text": "1. El Consejo de Administración Fiduciaria, bajo la autoridad de la Asamblea General, ayudará a ésta en el desempeño de las funciones aquí enumeradas."
+    },
+    {
+      "id": 87,
+      "text": "1. La Asamblea General y, bajo su autoridad, el Consejo de Administración Fiduciaria, podrán: a. considerar informes que les haya rendido la autoridad administradora; b. aceptar peticiones y examinarlas en consulta con la autoridad administradora; c. disponer visitas periódicas a los territorios fideicometidos en fechas convenidas con la autoridad administradora."
+    },
+    {
+      "id": 88,
+      "text": "El Consejo de Administración Fiduciaria formulará un cuestionario sobre el adelanto político, económico, social y educativo de los habitantes de cada territorio fideicometido."
+    },
+    {
+      "id": 89,
+      "text": "1. El Consejo de Administración Fiduciaria estará integrado por los siguientes Miembros de las Naciones Unidas: a. los Miembros que administren territorios fideicometidos; b. los Miembros mencionados por su nombre en el Artículo 23 que no estén administrando territorios fideicometidos; c. tantos otros Miembros elegidos por períodos de tres años por la Asamblea General cuantos sean necesarios para asegurar que el número total de miembros del Consejo de Administración Fiduciaria se divida por igual entre los Miembros de las Naciones Unidas administradores de tales territorios y los no administradores."
+    },
+    {
+      "id": 90,
+      "text": "1. Cada miembro del Consejo de Administración Fiduciaria tendrá un voto. 2. Las decisiones del Consejo de Administración Fiduciaria se tomarán por el voto de la mayoría de los miembros presentes y votantes."
+    },
+    {
+      "id": 91,
+      "text": "El Consejo de Administración Fiduciaria dictará su propio reglamento, el cual establecerá el método de elegir su Presidente."
+    },
+    {
+      "id": 92,
+      "text": "1. La Corte Internacional de Justicia será el órgano judicial principal de las Naciones Unidas; funcionará de conformidad con el Estatuto anexo, que está basado en el de la Corte Permanente de Justicia Internacional, y que forma parte integrante de esta Carta. 2. Todos los Miembros de las Naciones Unidas son ipso facto partes en el Estatuto de la Corte Internacional de Justicia."
+    },
+    {
+      "id": 93,
+      "text": "1. Todos los Miembros de las Naciones Unidas son ipso facto partes en el Estatuto de la Corte Internacional de Justicia. 2. Un Estado que no sea Miembro de las Naciones Unidas podrá llegar a ser parte en el Estatuto de la Corte Internacional de Justicia."
+    },
+    {
+      "id": 94,
+      "text": "1. Cada Miembro de las Naciones Unidas se compromete a cumplir la decisión de la Corte Internacional de Justicia en todo litigio en que sea parte. 2. Si una de las partes en un litigio dejare de cumplir las obligaciones que le imponga un fallo de la Corte, la otra parte podrá recurrir al Consejo de Seguridad, el cual podrá, si lo cree necesario, hacer recomendaciones o dictar medidas con el objeto de que se lleve a efecto la ejecución del fallo."
+    },
+    {
+      "id": 95,
+      "text": "Ninguna de las disposiciones de esta Carta impedirá a los Miembros de las Naciones Unidas encomendar la solución de sus diferencias a otros tribunales en virtud de acuerdos ya existentes o que puedan concertarse en el futuro."
+    },
+    {
+      "id": 96,
+      "text": "1. La Asamblea General o el Consejo de Seguridad podrán solicitar de la Corte Internacional de Justicia que emita una opinión consultiva sobre cualquier cuestión jurídica. 2. Los otros órganos de las Naciones Unidas y los organismos especializados que en cualquier momento sean autorizados para ello por la Asamblea General, podrán igualmente solicitar de la Corte opiniones consultivas sobre cuestiones jurídicas que surjan dentro de la esfera de sus actividades."
+    },
+    {
+      "id": 97,
+      "text": "La Secretaría se compondrá de un Secretario General y del personal que requiera la Organización. El Secretario General será nombrado por la Asamblea General a recomendación del Consejo de Seguridad. El Secretario General será el más alto funcionario administrativo de la Organización."
+    },
+    {
+      "id": 98,
+      "text": "El Secretario General actuará como tal en todas las sesiones de la Asamblea General, del Consejo de Seguridad, del Consejo Económico y Social y del Consejo de Administración Fiduciaria, y desempeñará las demás funciones que le encomienden dichos órganos. El Secretario General rendirá a la Asamblea General un informe anual sobre las actividades de la Organización."
+    },
+    {
+      "id": 99,
+      "text": "El Secretario General podrá llamar la atención del Consejo de Seguridad hacia cualquier asunto que en su opinión pueda poner en peligro el mantenimiento de la paz y la seguridad internacionales."
+    },
+    {
+      "id": 100,
+      "text": "1. En el cumplimiento de sus deberes, el Secretario General y el personal de la Secretaría no solicitarán ni recibirán instrucciones de ningún gobierno ni de ninguna autoridad ajena a la Organización, y se abstendrán de actuar en forma alguna que sea incompatible con su condición de funcionarios internacionales responsables únicamente ante la Organización. 2. Cada uno de los Miembros de las Naciones Unidas se compromete a respetar el carácter exclusivamente internacional de las funciones del Secretario General y del personal de la Secretaría, y a no tratar de influir sobre ellos en el desempeño de sus funciones."
+    },
+    {
+      "id": 101,
+      "text": "1. El personal de la Secretaría será nombrado por el Secretario General de acuerdo con las reglas establecidas por la Asamblea General. 2. La consideración primordial que se tendrá en cuenta al nombrar el personal de la Secretaría y al determinar las condiciones del servicio, es la necesidad de asegurar el más alto grado de eficiencia, competencia e integridad. Se dará debida consideración también a la importancia de contratar el personal en forma de que haya la más amplia representación geográfica posible."
+    },
+    {
+      "id": 102,
+      "text": "1. Todo tratado y todo acuerdo internacional concertados por cualesquiera Miembros de las Naciones Unidas después de entrar en vigor esta Carta, serán registrados en la Secretaría y publicados por ésta a la mayor brevedad posible. 2. Ninguna de las partes en un tratado o acuerdo internacional que no haya sido registrado conforme a las disposiciones del párrafo 1 de este Artículo, podrá invocar dicho tratado o acuerdo ante órgano alguno de las Naciones Unidas."
+    },
+    {
+      "id": 103,
+      "text": "En caso de conflicto entre las obligaciones contraídas por los Miembros de las Naciones Unidas en virtud de la presente Carta y sus obligaciones contraídas en virtud de cualquier otro convenio internacional, prevalecerán las obligaciones impuestas por la presente Carta."
+    },
+    {
+      "id": 104,
+      "text": "La Organización gozará, en el territorio de cada uno de sus Miembros, de la capacidad jurídica que sea necesaria para el ejercicio de sus funciones y la realización de sus propósitos."
+    },
+    {
+      "id": 105,
+      "text": "1. La Organización gozará, en el territorio de cada uno de sus Miembros, de los privilegios e inmunidades necesarios para la realización de sus propósitos. 2. Los representantes de los Miembros de la Organización y los funcionarios de ésta, gozarán asimismo de los privilegios e inmunidades necesarios para desempeñar con independencia sus funciones en relación con la Organización."
+    },
+    {
+      "id": 106,
+      "text": "Mientras entran en vigor los convenios especiales previstos en el Artículo 43, que a juicio del Consejo de Seguridad lo capaciten para ejercer las atribuciones a que se refiere el Artículo 42, las partes en la Declaración de las Cuatro Potencias firmada en Moscú el 30 de octubre de 1943, y Francia, deberán, conforme a las disposiciones del párrafo 5 de esa Declaración, celebrar consultas entre sí, y cuando a ello hubiere lugar, con otros Miembros de la Organización, a fin de acordar en nombre de ésta la acción conjunta que fuere necesaria para mantener la paz y la seguridad internacionales."
+    },
+    {
+      "id": 107,
+      "text": "Ninguna disposición de esta Carta invalidará o impedirá cualquier acción ejercida o autorizada como resultado de la segunda guerra mundial con respecto a un Estado enemigo de cualquiera de los signatarios de esta Carta durante la citada guerra, por los gobiernos responsables de dicha acción."
+    },
+    {
+      "id": 108,
+      "text": "Las reformas a la presente Carta entrarán en vigor para todos los Miembros de las Naciones Unidas cuando hayan sido adoptadas por el voto de las dos terceras partes de los miembros de la Asamblea General y ratificadas, de conformidad con sus respectivos procedimientos constitucionales, por las dos terceras partes de los Miembros de las Naciones Unidas, incluyendo a todos los miembros permanentes del Consejo de Seguridad."
+    },
+    {
+      "id": 109,
+      "text": "1. Se podrá celebrar una Conferencia General de los Miembros de las Naciones Unidas con el propósito de revisar esta Carta, en la fecha y lugar que se determinen por el voto de las dos terceras partes de los miembros de la Asamblea General y por el voto de cualesquiera nueve miembros del Consejo de Seguridad."
+    },
+    {
+      "id": 110,
+      "text": "1. La presente Carta será ratificada por los Estados signatarios de acuerdo con sus respectivos procedimientos constitucionales. 2. Las ratificaciones serán entregadas para su depósito al Gobierno de los Estados Unidos de América. 3. La presente Carta entrará en vigor tan pronto como hayan sido depositadas las ratificaciones de la República de China, Francia, la Unión de las Repúblicas Socialistas Soviéticas, el Reino Unido de la Gran Bretaña e Irlanda del Norte y los Estados Unidos de América, y por la mayoría de los demás Estados signatarios."
+    },
+    {
+      "id": 111,
+      "text": "El texto de la presente Carta en chino, francés, ruso, inglés y español es igualmente auténtico. Los textos originales serán depositados en los archivos del Gobierno de los Estados Unidos de América. Dicho Gobierno enviará copias debidamente certificadas de los mismos a los Gobiernos de los demás Estados signatarios."
+    }
   ]
 }

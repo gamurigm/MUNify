@@ -61,6 +61,36 @@ class KnowledgeBaseService:
         results.sort(key=lambda x: x["score"], reverse=True)
         return [res["text"] for res in results[:8]] # pyre-ignore
 
+    def search_structured(self, query: str):
+        """Returns raw article dicts: [{treaty, id, text, score}]"""
+        from typing import List, Dict, Any
+        results: List[Dict[str, Any]] = []
+        query_lower = query.lower()
+        search_terms = query_lower.split()
+        stopwords = {"de", "la", "el", "en", "y", "a", "los", "las", "un", "una", "del", "por", "para", "con", "que", "se", "es"}
+        keywords = [word for word in search_terms if word not in stopwords and len(word) > 2]
+        
+        if not keywords:
+            return []
+
+        for doc in self.documents:
+            title = doc.get("title", "Documento Oficial")
+            articles: List[Dict[str, Any]] = doc.get("articles", []) # pyre-ignore
+            for article in articles:
+                text = article.get("text", "")
+                text_lower = text.lower()
+                match_score = sum(1 for word in keywords if word in text_lower)
+                if match_score > 0:
+                    results.append({
+                        "score": match_score,
+                        "treaty": title,
+                        "id": article.get("id", "?"),
+                        "text": text
+                    })
+        
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:8]  # pyre-ignore
+
     def _get_default_fallback(self):
         """Fallback diplomático genérico si la búsqueda falla."""
         from typing import List, Dict, Any

@@ -42,7 +42,7 @@ export default function DraftingPage() {
     session: 'Sesión Ordinaria 2026' 
   });
 
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; action?: string }[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; action?: string; cited_articles?: { treaty: string; article_id: string; text: string }[] }[]>([
     { role: 'ai', text: 'Estudio de Redacción listo. Define los parámetros para comenzar.' }
   ]);
 
@@ -221,7 +221,8 @@ export default function DraftingPage() {
       
       setMessages(prev => [...prev, { 
         role: 'ai', 
-        text: data.response
+        text: data.response,
+        cited_articles: data.cited_articles || []
       }]);
 
     } catch (error) {
@@ -389,6 +390,40 @@ export default function DraftingPage() {
                                 >
                                     + Insertar Cláusula Guía
                                 </button>
+                            )}
+                            {/* CITED ARTICLES WITH INSERT BUTTONS */}
+                            {m.cited_articles && m.cited_articles.length > 0 && (
+                                <div className="w-full space-y-2 mt-1">
+                                    <div className="text-[8px] font-black uppercase tracking-widest text-cyan-400/60 ml-2">
+                                        📜 Artículos Encontrados — Click para insertar
+                                    </div>
+                                    {m.cited_articles.map((art, j) => (
+                                        <div key={j} className="group relative bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all cursor-pointer"
+                                             onClick={() => handleAISuggestion(
+                                                `<p><i>Recordando</i> el <b>Artículo ${art.article_id}</b> de la <b>${art.treaty}</b>, que establece: "${art.text.substring(0, 200)}${art.text.length > 200 ? '...' : ''}"</p>`
+                                             )}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-lg uppercase">
+                                                            Art. {art.article_id}
+                                                        </span>
+                                                        <span className="text-[8px] font-bold text-white/30 truncate">
+                                                            {art.treaty}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-white/50 leading-relaxed line-clamp-2">
+                                                        {art.text.substring(0, 150)}{art.text.length > 150 ? '...' : ''}
+                                                    </p>
+                                                </div>
+                                                <button className="shrink-0 px-3 py-1.5 rounded-xl bg-cyan-500/20 text-cyan-400 text-[8px] font-black uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all hover:bg-cyan-500 hover:text-black shadow-lg">
+                                                    + Insertar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     ))}
