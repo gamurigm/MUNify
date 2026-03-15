@@ -8,3 +8,7 @@ fastapi
 uvicorn
 logfire[fastapi]
 pydantic-settings
+sentence-transformers
+chromadb
+trafilatura
+numpy

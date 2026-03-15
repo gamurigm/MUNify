@@ -21,7 +21,8 @@ load_dotenv(dotenv_path=env_path)
 # Initialize Logfire
 logfire.configure(
     token=os.getenv("LOGFIRE_TOKEN"),
-    send_to_logfire=True
+    send_to_logfire=True,
+    inspect_arguments=False
 )
 
 try:
@@ -79,6 +80,7 @@ class GenerateRequest(BaseModel):
     committee: str
     documentType: Optional[str] = "POSITION_PAPER"
     notebookId: Optional[str] = None
+    deepResearch: Optional[bool] = False
 
 class GenerateResponse(BaseModel):
     draft: str              # LaTeX source
@@ -104,6 +106,9 @@ async def generate_document(request: GenerateRequest):
             "country": request.country,
             "committee": request.committee,
             "document_type": request.documentType or "POSITION_PAPER",
+            "deep_research": request.deepResearch or False,
+            "research_queries": [],
+            "iteration_count": 0,
             "research_data": [],
             "legal_context": [],
             "draft": "",
@@ -143,6 +148,7 @@ class ChatRequest(BaseModel):
     country: str
     committee: str
     notebookId: Optional[str] = None
+    deepResearch: Optional[bool] = False
 
 class CitedArticle(BaseModel):
     treaty: str
@@ -180,6 +186,30 @@ async def fast_chat_endpoint(request: ChatRequest):
         else:
             search_query = f"{request.topic} {last_user_msg}"
         
+        # --- NUEVA CAPA: Deep Research (Opcional) ---
+        deep_research_context = ""
+        if request.deepResearch:
+            from nodes.research_nodes import research_planner_node, research_executor_node, research_synthesizer_node
+            logfire.info("Ejecutando Deep Research para el Chat...")
+            
+            # Simulamos el paso por el grafo para esta consulta específica
+            research_state = {
+                "topic": last_user_msg,
+                "country": request.country,
+                "deep_research": True,
+                "research_queries": [],
+                "iteration_count": 0,
+                "research_data": []
+            }
+            # Ejecutamos los nodos secuencialmente
+            research_state = await research_planner_node(research_state) # pyre-ignore
+            research_state = await research_executor_node(research_state) # pyre-ignore
+            research_state = await research_synthesizer_node(research_state) # pyre-ignore
+            
+            deep_research_context = "\n\nINFORMACIÓN RECIENTE ENCONTRADA (WEB):\n" + "\n".join(research_state["research_data"][:15])
+            logfire.info(f"Deep Research completado: {len(research_state['research_data'])} fuentes.")
+
+        
         # Get RAG results as raw structured data
         raw_articles = knowledge_base.search_structured(search_query)  # pyre-ignore
         
@@ -196,16 +226,38 @@ async def fast_chat_endpoint(request: ChatRequest):
         # CASE 1: NotebookLM es la fuente primaria si está vinculado
         if request.notebookId:
             try:
-                # Instrucción explícita para mayor detalle y formato APA
-                detailed_prompt = (
-                    f"Responde de forma exhaustiva a: {last_user_msg}. "
-                    "REGLAS CRÍTICAS:\n"
-                    "1. Cada vez que menciones un dato o hecho del cuaderno, debes incluir una CITACIÓN ENTRE PARÉNTESIS con el nombre de la fuente y página si existe.\n"
-                    "2. Si es una cita directa, úsala entre comillas seguida de (Fuente, Pág).\n"
-                    "3. Al final, incluye una sección de 'Bibliografía' en formato APA 7ma edición. "
-                    "RECUERDA: En APA 7, el nombre de la revista o el título del libro DEBE IR EN CURSIVA (ej: _Nombre del Libro_ o *Nombre de la Revista*).\n"
-                    "Tu respuesta servirá para alimentar un sistema de extracción automática de citas, así que sé muy riguroso con los paréntesis (Fuente, Año/Pág)."
-                )
+                # --- NUEVA CAPA: Deep NLM Interrogation (Doble Bucle) ---
+                if request.deepResearch:
+                    logfire.info("Ejecutando Deep NLM Interrogation (ML Analysis)...")
+                    # Bucle 1: Identificación de estructura y temas clave
+                    structure_prompt = (
+                        f"Analiza mis documentos para responder a: {last_user_msg}. "
+                        "PASO 1: Identifica las 3 fuentes más relevantes y los argumentos técnicos clave que contienen. "
+                        "No respondas al usuario todavía, solo extrae la estructura de evidencia."
+                    )
+                    structure_result = await notebook_service.query_notebook(request.notebookId, structure_prompt)
+                    evidence_summary = structure_result.get("answer", "")
+                    
+                    # Bucle 2: Meta-Análisis y Síntesis Final
+                    detailed_prompt = (
+                        f"Basado en este análisis previo de mis documentos: {evidence_summary}\n\n"
+                        f"Responde de forma magistral y exhaustiva a la consulta original: {last_user_msg}. "
+                        "REGLAS CRÍTICAS DE INVESTIGACIÓN PROFUNDA (ML):\n"
+                        "1. Integra los datos del cuaderno con la información externa proporcionada si existe.\n"
+                        "2. Cada vez que menciones un dato o hecho del cuaderno, debes incluir una CITACIÓN ENTRE PARÉNTESIS con el nombre de la fuente y página.\n"
+                        "3. Al final, incluye una sección de 'Bibliografía' en formato APA 7ma edición con los títulos en cursiva.\n"
+                        f"INFORMACIÓN WEB ADICIONAL (CROSS-VERIFICATION):\n{deep_research_context}\n"
+                    )
+                else:
+                    # Modo Estándar NLM
+                    detailed_prompt = (
+                        f"Responde de forma exhaustiva a: {last_user_msg}. "
+                        "REGLAS CRÍTICAS:\n"
+                        "1. Cada vez que menciones un dato o hecho del cuaderno, debes incluir una CITACIÓN ENTRE PARÉNTESIS con el nombre de la fuente y página si existe.\n"
+                        "2. Al final, incluye una sección de 'Bibliografía' en formato APA 7ma edición.\n"
+                        f"{deep_research_context}\n"
+                    )
+
                 nlm_result = await notebook_service.query_notebook(request.notebookId, detailed_prompt)
                 
                 # Transformar citas
@@ -246,6 +298,7 @@ async def fast_chat_endpoint(request: ChatRequest):
 Ayudas al delegado de {request.country} en el comité {request.committee} sobre '{request.topic}'.
 Habla de forma extremadamente profesional, diplomática y profunda. 
 Proporciona respuestas detalladas y estructuradas, no te limites a párrafos cortos.
+{deep_research_context}
 Cita los tratados oficiales solo si son estrictamente relevantes para responder a la consulta."""
         
         # Filtro de artículos para el caso RAG estándar

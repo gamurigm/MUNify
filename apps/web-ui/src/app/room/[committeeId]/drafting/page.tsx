@@ -41,7 +41,8 @@ export default function DraftingPage() {
     topic: '', 
     delegation: '', 
     docType: 'Proyecto de Resolución', 
-    session: 'Sesión Ordinaria 2026' 
+    session: 'Sesión Ordinaria 2026',
+    deepResearch: false
   });
 
   const [messages, setMessages] = useState<{ 
@@ -473,7 +474,8 @@ export default function DraftingPage() {
           topic: params.topic || "Debate General",
           country: params.delegation || "Delegado",
           committee: committeeId,
-          notebookId: notebookId // Pasamos el ID del cuaderno si existe
+          notebookId: notebookId,
+          deepResearch: params.deepResearch
         })
       });
 
@@ -900,7 +902,7 @@ export default function DraftingPage() {
                                 }`}>
                                     {m.role === 'user' ? 'U' : 'AI'}
                                 </div>
-                                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-white/20">
+                                <span className="text-[14px] font-black uppercase tracking-[0.2em] text-white/20">
                                     {m.role === 'user' ? 'Delegado' : 'Co-Pilot'}
                                 </span>
                             </div>
@@ -911,7 +913,7 @@ export default function DraftingPage() {
                                 ? 'bg-gradient-to-br from-white/[0.08] to-transparent text-white border border-white/10 rounded-tr-none' 
                                 : 'bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent text-cyan-50/90 border border-cyan-500/20 backdrop-blur-xl rounded-tl-none font-medium leading-relaxed'
                             }`}>
-                                <div className={`markdown-content ${m.role === 'ai' ? 'text-[17px]' : 'text-[17px]'}`}>
+                                <div className={`markdown-content ${m.role === 'ai' ? 'text-[20px]' : 'text-[20px]'}`}>
                                     <ReactMarkdown 
                                         remarkPlugins={[remarkGfm]}
                                         components={{
@@ -920,7 +922,7 @@ export default function DraftingPage() {
                                             ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 space-y-2" {...props} />,
                                             li: ({node, ...props}) => <li className="marker:text-cyan-500/50" {...props} />,
                                             strong: ({node, ...props}) => <strong className="font-black text-white decoration-cyan-500/30 underline-offset-2" {...props} />,
-                                            code: ({node, ...props}) => <code className="bg-white/10 px-2 py-1 rounded text-cyan-400 font-mono text-[16px]" {...props} />,
+                                            code: ({node, ...props}) => <code className="bg-white/10 px-2 py-1 rounded text-cyan-400 font-mono text-[19px]" {...props} />,
                                         }}
                                     >
                                         {m.text}
@@ -944,7 +946,7 @@ export default function DraftingPage() {
                                 <div className="w-full space-y-3 mt-4 animate-in fade-in zoom-in-95 duration-700">
                                     <div className="flex items-center gap-2 ml-1 mb-1">
                                         <div className="h-px w-4 bg-cyan-500/30" />
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-cyan-400/60">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400/60">
                                             📚 Evidencia de Cuaderno — Click para insertar
                                         </span>
                                     </div>
@@ -961,16 +963,16 @@ export default function DraftingPage() {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[13px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-lg uppercase tracking-tight">
+                                                            <span className="text-[15px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-lg uppercase tracking-tight">
                                                                 {cit.source_title}
                                                             </span>
                                                             {cit.page_number && (
-                                                                <span className="text-[12px] font-black text-white/40">
+                                                                <span className="text-[14px] font-black text-white/40">
                                                                     Pág. {cit.page_number}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-[16px] text-white/60 leading-relaxed line-clamp-3 group-hover:text-white/90 transition-colors italic">
+                                                        <p className="text-[19px] text-white/60 leading-relaxed line-clamp-3 group-hover:text-white/90 transition-colors italic">
                                                             "{cit.text_segment}"
                                                         </p>
                                                     </div>
@@ -1030,7 +1032,7 @@ export default function DraftingPage() {
                                 <div className="w-full space-y-3 mt-4 animate-in fade-in slide-in-from-right-4 duration-700">
                                     <div className="flex items-center gap-2 ml-1 mb-1">
                                         <div className="h-px w-4 bg-purple-500/30" />
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-purple-400/60">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-purple-400/60">
                                             ⚖️ Marco Jurídico ONU — Click para insertar
                                         </span>
                                     </div>
@@ -1047,14 +1049,14 @@ export default function DraftingPage() {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[13px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-lg uppercase tracking-tight">
+                                                            <span className="text-[15px] font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-lg uppercase tracking-tight">
                                                                 Art. {art.article_id}
                                                             </span>
-                                                            <span className="text-[12px] font-black text-white/40 uppercase truncate max-w-[200px]">
+                                                            <span className="text-[14px] font-black text-white/40 uppercase truncate max-w-[200px]">
                                                                 {art.treaty}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[16px] text-white/60 leading-relaxed line-clamp-3 group-hover:text-white/90 transition-colors">
+                                                        <p className="text-[19px] text-white/60 leading-relaxed line-clamp-3 group-hover:text-white/90 transition-colors">
                                                             "{art.text}"
                                                         </p>
                                                     </div>
@@ -1101,7 +1103,7 @@ export default function DraftingPage() {
                                 }
                             }}
                             placeholder="Interrogar al Co-Pilot y biblioteca..."
-                            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-[32px] p-5 pr-14 text-[17px] font-medium outline-none focus:border-cyan-500/40 focus:bg-white/[0.08] transition-all h-20 shadow-inner resize-none custom-scrollbar placeholder:text-white/20"
+                            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-[32px] p-5 pr-14 text-[20px] font-medium outline-none focus:border-cyan-500/40 focus:bg-white/[0.08] transition-all h-20 shadow-inner resize-none custom-scrollbar placeholder:text-white/20"
                         />
                         <button 
                             onClick={handleSendMessage}
@@ -1149,6 +1151,29 @@ export default function DraftingPage() {
                             />
                         </div>
                     </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[9px] font-black uppercase opacity-40 ml-3">Modo de Investigación</label>
+                        <button 
+                            onClick={() => setParams({...params, deepResearch: !params.deepResearch})}
+                            className={`w-full h-11 rounded-2xl border transition-all flex items-center justify-between px-5 ${
+                                params.deepResearch 
+                                ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400' 
+                                : 'bg-white/5 border-white/10 text-white/40'
+                            }`}
+                        >
+                            <span className="text-xs font-bold uppercase tracking-tight">
+                                {params.deepResearch ? '⚡ Investigación Profunda (Perplexity Mode)' : 'Estándar'}
+                            </span>
+                            <div className={`w-4 h-4 rounded-full transition-all ${params.deepResearch ? 'bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]' : 'bg-white/10'}`} />
+                        </button>
+                        <p className="text-[8px] font-bold text-white/10 uppercase tracking-widest ml-3">
+                            {params.deepResearch 
+                                ? 'Múltiples consultas, verificación de fuentes y análisis diplomático exhaustivo.' 
+                                : 'Búsqueda web directa y rápida.'}
+                        </p>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
                             <label className="text-[9px] font-black uppercase opacity-40 ml-3">Tipo de Documento</label>
