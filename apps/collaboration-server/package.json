@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npx y-websocket",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,7 +12,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "y-websocket": "^1.5.0",
-    "yjs": "^13.6.29"
+    "dotenv": "^17.3.1",
+    "ioredis": "^5.10.0",
+    "ws": "^8.19.0",
+    "y-redis": "^1.0.3",
+    "y-websocket": "^1.5.4",
+    "yjs": "^13.6.30"
   }
 }

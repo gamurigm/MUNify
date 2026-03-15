@@ -7,7 +7,9 @@ from domain.state import AgentState
 from services.llm import tavily, scribe_llm, critic_llm
 from services.knowledge_base import knowledge_base
 from utils.converters import load_latex_template, latex_to_html
+from utils.resolution_parser import resolution_ast
 from notebook_service import notebook_service
+from services.knowledge_graph import knowledge_graph
 
 # [SEARCH] 1. Agente Investigador (Tavily)
 @logfire.instrument("Researcher Node")
@@ -57,8 +59,18 @@ async def librarian_node(state: AgentState):
         except Exception as e:
             print(f"Error consultando NotebookLM: {e}")
 
-    state["legal_context"] = context
-    return state
+    # --- NUEVA CAPA: Knowledge Graph (Neo4j) ---
+    try:
+        country = state.get("country", "")
+        related_treaties = knowledge_graph.get_related_treaties(country)
+        if related_treaties:
+            treaties_str = ", ".join(related_treaties)
+            context.append(f"TRATADOS VINCULANTES PARA {country.upper()}: {treaties_str}")
+    except Exception as e:
+        print(f"Error consultando Knowledge Graph: {e}")
+
+    print(f"[OK] Se encontraron {len(legal_context)} documentos legales relevantes.")
+    return {"legal_context": context}
 
 
 # [WRITE] 3. Agente Redactor — Genera LaTeX
@@ -120,10 +132,13 @@ async def scribe_node(state: AgentState):
     latex_content = response.content.strip()
     latex_content = re.sub(r"^```(?:latex|tex|)\n(.*?)```$", r"\1", latex_content, flags=re.DOTALL | re.IGNORECASE).strip()
     
-    state["draft"] = latex_content
-    state["draft_html"] = latex_to_html(latex_content)
+    draft = latex_content
+    draft_html = latex_to_html(latex_content)
     print("[OK] Borrador LaTeX generado exitosamente.")
-    return state
+    return {
+        "draft": draft,
+        "draft_html": draft_html,
+    }
 
 
 # [VALIDATE] 4. Agente Validador
@@ -154,20 +169,27 @@ Si el documento es completamente apto y compila, responde ÚNICAMENTE con la pal
 Si tiene errores críticos de compilación LaTeX o no cumple las REGLAS DE FORMATO, enumera los errores específicos brevemente.
 """
     
+    # --- NUEVA CAPA: Validación AST Estructural ---
+    ast_result = resolution_ast.validate_structure(state['draft'])
+    ast_errors = ast_result.get("errors", [])
+    
     response = critic_llm.invoke([
         SystemMessage(content="Eres un revisor de protocolos de las Naciones Unidas y experto en LaTeX. Eres estricto pero justo. Si el documento cumple razonablemente y compila, responde VALID."),
         HumanMessage(content=prompt)
     ])
     
     feedback = response.content.strip()
-    if "VALID" in feedback.upper() and len(feedback) < 10:
+    
+    # Combinar validación LLM con validación AST
+    if "VALID" in feedback.upper() and len(feedback) < 10 and not ast_errors:
         state["is_valid"] = True
         state["errors"] = []
-        print("[OK] Documento LaTeX validado.")
+        print("[OK] Documento LaTeX validado (Física + Estructura AST).")
     else:
         state["is_valid"] = False
-        state["errors"] = [feedback]
-        print("[WARN] El documento requiere correcciones.")
+        all_errors = ast_errors + ([feedback] if "VALID" not in feedback.upper() else [])
+        state["errors"] = all_errors
+        print(f"[WARN] El documento requiere correcciones. Errores AST: {len(ast_errors)}")
     
     return state
 

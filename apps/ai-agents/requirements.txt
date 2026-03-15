@@ -11,4 +11,6 @@ pydantic-settings
 sentence-transformers
 chromadb
 trafilatura
+langgraph-checkpoint-redis
+redis
 numpy

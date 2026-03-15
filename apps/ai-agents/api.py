@@ -4,12 +4,14 @@ import subprocess
 import tempfile
 import shutil
 import logfire  # pyre-ignore
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form  # pyre-ignore
-from fastapi.responses import FileResponse  # pyre-ignore
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks  # pyre-ignore
+import uuid
+from fastapi.responses import FileResponse, StreamingResponse  # pyre-ignore
 from pydantic import BaseModel  # pyre-ignore
 from typing import List, Optional, Any, Dict
 from dotenv import load_dotenv  # pyre-ignore
 from pathlib import Path
+import asyncio
 
 # Variable global para trackear el proceso de login interactivo
 login_process_store: Dict[str, subprocess.Popen] = {}
@@ -37,6 +39,8 @@ logfire.info("MUNify AI Agents Service Started")
 from main import app as agent_workflow  # pyre-ignore
 from main import latex_to_html, html_to_latex  # pyre-ignore
 from notebook_service import notebook_service
+from services.job_store import job_store
+from services.telemetry import telemetry
 
 from fastapi.middleware.cors import CORSMiddleware # pyre-ignore
 
@@ -81,13 +85,19 @@ class GenerateRequest(BaseModel):
     documentType: Optional[str] = "POSITION_PAPER"
     notebookId: Optional[str] = None
     deepResearch: Optional[bool] = False
+    threadId: Optional[str] = None
 
 class GenerateResponse(BaseModel):
-    draft: str              # LaTeX source
-    draft_html: str         # HTML for Tiptap editor
-    strategy_guide: str
+    job_id: Optional[str] = None
+    status: str = "completed"
+    draft: Optional[str] = ""
+    draft_html: Optional[str] = ""
+    strategy_guide: Optional[str] = ""
     errors: Optional[List[str]] = None
     research_data: Optional[List[str]] = None
+    raw_findings: Optional[List[Dict[str, Any]]] = None
+    recommended_indices: Optional[List[int]] = None
+    thread_id: Optional[str] = None
 
 class ConvertRequest(BaseModel):
     content: str            # HTML content from editor
@@ -100,38 +110,112 @@ class CompileRequest(BaseModel):
 
 @app.post("/api/v1/generate", response_model=GenerateResponse)
 async def generate_document(request: GenerateRequest):
+    """Sincrónico (Bloqueante): Úsalo solo para pruebas rápidas o hilos cortos."""
     try:
-        initial_state = {
-            "topic": request.topic,
-            "country": request.country,
-            "committee": request.committee,
-            "document_type": request.documentType or "POSITION_PAPER",
-            "deep_research": request.deepResearch or False,
-            "research_queries": [],
-            "iteration_count": 0,
-            "research_data": [],
-            "legal_context": [],
-            "draft": "",
-            "draft_html": "",
-            "is_valid": False,
-            "errors": [],
-            "strategy_guide": "",
-            "notebook_id": request.notebookId
-        }
+        initial_state = _prepare_initial_state(request)
+        config = _prepare_config(request)
         
-        config = {"recursion_limit": 10}
+        logfire.info(f"Starting synchronous draft generation")
         result = await agent_workflow.ainvoke(initial_state, config)
-        
-        response_data = {
-            "draft": str(result.get("draft", "")),
-            "draft_html": str(result.get("draft_html", "")),
-            "strategy_guide": str(result.get("strategy_guide", "")),
-            "errors": result.get("errors", []),
-            "research_data": result.get("research_data", [])
-        }
-        return GenerateResponse(**response_data) # pyre-ignore
+        return _format_generate_response(result, thread_id=config["configurable"]["thread_id"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def _run_agent_job(job_id: str, request: GenerateRequest):
+    """Tarea de fondo para ejecutar el grafo de agentes."""
+    try:
+        job_store.update_status(job_id, "processing")
+        initial_state = _prepare_initial_state(request)
+        config = _prepare_config(request)
+        
+        result = await agent_workflow.ainvoke(initial_state, config)
+        
+        # Formatear y guardar resultado
+        response = _format_generate_response(result, thread_id=config["configurable"]["thread_id"])
+        
+        # Si está esperando selección, el job está técnicamente 'completado' en su fase inicial
+        job_store.update_status(job_id, "completed", result=response.model_dump())
+    except Exception as e:
+        logfire.info(f"Agent Job {job_id} failed: {e}")
+        job_store.update_status(job_id, "failed", error=str(e))
+
+class SelectResearchRequest(BaseModel):
+    threadId: str
+    selectedIndices: List[int]
+
+@app.post("/api/v1/research/select")
+async def select_research_indices(request: SelectResearchRequest, background_tasks: BackgroundTasks):
+    """Retoma la generación después de que el usuario elige las fuentes."""
+    job_id = job_store.create_job("agent_resume")
+    background_tasks.add_task(_resume_agent_job, job_id, request)
+    return {"job_id": job_id, "status": "resuming"}
+
+async def _resume_agent_job(job_id: str, request: SelectResearchRequest):
+    try:
+        job_store.update_status(job_id, "processing")
+        config = {"configurable": {"thread_id": request.threadId}}
+        
+        # 1. Actualizar el estado con los índices seleccionados
+        await agent_workflow.aupdate_state(config, {"selected_indices": request.selectedIndices})
+        
+        # 2. Retomar la ejecución (None como input para continuar desde el breakpoint)
+        result = await agent_workflow.ainvoke(None, config)
+        
+        # 3. Guardar resultado final
+        response = _format_generate_response(result)
+        job_store.update_status(job_id, "completed", result=response.model_dump())
+    except Exception as e:
+        logfire.error(f"Resume Job failed: {e}")
+        job_store.update_status(job_id, "failed", error=str(e))
+
+def _prepare_initial_state(request: GenerateRequest) -> Dict[str, Any]:
+    return {
+        "topic": request.topic,
+        "country": request.country,
+        "committee": request.committee,
+        "document_type": request.documentType or "POSITION_PAPER",
+        "deep_research": request.deepResearch or False,
+        "research_queries": [],
+        "iteration_count": 0,
+        "research_data": [],
+        "legal_context": [],
+        "draft": "",
+        "draft_html": "",
+        "is_valid": False,
+        "errors": [],
+        "strategy_guide": "",
+        "notebook_id": request.notebookId
+    }
+
+def _prepare_config(request: GenerateRequest) -> Dict[str, Any]:
+    thread_id = request.threadId or f"draft_{request.committee}_{request.country}_{request.topic[:10]}"
+    return {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 20
+    }
+
+def _format_generate_response(result: Dict[str, Any], thread_id: str = "") -> GenerateResponse:
+    # Detectar si el grafo está interrumpido (esperando selección)
+    is_interrupted = len(result.get("research_data", [])) == 0 and len(result.get("raw_findings", [])) > 0
+    
+    return GenerateResponse(
+        status="waiting_selection" if is_interrupted else "completed",
+        draft=str(result.get("draft", "")),
+        draft_html=str(result.get("draft_html", "")),
+        strategy_guide=str(result.get("strategy_guide", "")),
+        errors=result.get("errors", []),
+        research_data=result.get("research_data", []),
+        raw_findings=result.get("raw_findings", []),
+        recommended_indices=result.get("recommended_indices", []),
+        thread_id=thread_id
+    )
+
+@app.post("/api/v1/generate/async")
+async def generate_document_async(request: GenerateRequest, background_tasks: BackgroundTasks):
+    """Asincrónico (No bloqueante): Recomendado para Deep Research o Documentos Largos."""
+    job_id = job_store.create_job("agent")
+    background_tasks.add_task(_run_agent_job, job_id, request)
+    return {"job_id": job_id, "status": "queued"}
 
 
 from services.llm import fast_llm # pyre-ignore
@@ -332,6 +416,47 @@ Cita los tratados oficiales solo si son estrictamente relevantes para responder 
         logfire.error(f"Chat Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/v1/chat/stream")
+async def chat_stream_endpoint(request: ChatRequest):
+    """Endpoint de chat con streaming para feedback en tiempo real."""
+    async def response_generator():
+        try:
+            # 1. Preparar Contexto (RAG + Deep Research)
+            last_user_msg = ""
+            for m in reversed(request.messages): # pyre-ignore
+                if m.role == "user":
+                    last_user_msg = m.text
+                    break
+            
+            search_query = f"{request.topic} {last_user_msg}"
+            
+            # --- RAG Estándar ---
+            raw_articles = knowledge_base.search_structured(search_query) # pyre-ignore
+            cited = []
+            for a in raw_articles[:4]:
+                 cited.append({"treaty": a["treaty"], "article_id": str(a["id"]), "text": a["text"]})
+            
+            # Enviar metadatos iniciales (artículos citados)
+            yield json.dumps({"type": "metadata", "cited_articles": cited}) + "\n"
+
+            # 2. Configurar LLM y Stream
+            system_prompt = f"Eres un Asesor Diplomático IA experto. Ayudas al delegado de {request.country} en {request.committee} sobre '{request.topic}'."
+            langchain_msgs = [SystemMessage(content=system_prompt)]
+            for m in request.messages[-5:]: # pyre-ignore
+                if m.role == "user": langchain_msgs.append(HumanMessage(content=m.text))
+                else: langchain_msgs.append(AIMessage(content=m.text))
+
+            # 3. Stream de tokens
+            async for chunk in fast_llm.astream(langchain_msgs):
+                if chunk.content:
+                    yield json.dumps({"type": "content", "text": chunk.content}) + "\n"
+                    
+        except Exception as e:
+            logfire.error(f"Streaming Error: {e}")
+            yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+
+    return StreamingResponse(response_generator(), media_type="text/event-stream")
+
 
 @app.post("/api/v1/convert/html-to-latex", response_model=ConvertResponse)
 async def convert_html_to_latex_endpoint(request: ConvertRequest):
@@ -378,7 +503,99 @@ async def compile_pdf_from_html(request: CompileHtmlRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"HTML to PDF failed: {str(e)}")
 
+# --- NUEVOS ENDPOINTS DE TRABAJO (JOBS) ---
+
+@app.get("/api/v1/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    """Consulta el estado y resultado de cualquier tarea en segundo plano (Agent o PDF)."""
+    job_data = job_store.get_job(job_id)
+    if job_data.get("status") == "not_found":
+        raise HTTPException(status_code=404, detail="Job no encontrado")
+    return job_data
+
+@app.get("/api/v1/jobs/{job_id}/download")
+async def download_job_result(job_id: str):
+    """Descarga el PDF resultante de un job completado."""
+    from services.semantic_cache import semantic_cache
+    path = semantic_cache.client.get(f"job:{job_id}:path")
+    
+    if not path or not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado o expirado")
+    
+    return FileResponse(
+        path, 
+        media_type="application/pdf",
+        filename="MUNify_Document.pdf"
+    )
+
+async def _bg_compile_task(job_id: str, latex_code: str):
+    """Tarea que se ejecuta en el thread pool de FastAPI."""
+    try:
+        job_store.update_status(job_id, "processing")
+        
+        # Reutilizamos la lógica de compilación pero guardando el path
+        tmpdir = tempfile.mkdtemp(prefix="munify_")
+        tex_path = os.path.join(tmpdir, "document.tex")
+        pdf_path = os.path.join(tmpdir, "document.pdf")
+        
+        with open(tex_path, "w", encoding="utf-8") as f:
+            f.write(latex_code)
+        
+        templates_src = os.path.join(os.path.dirname(__file__), "templates")
+        if os.path.exists(templates_src):
+            templates_dst = os.path.join(tmpdir, "templates")
+            shutil.copytree(templates_src, templates_dst)
+            
+        for _ in range(2):
+            subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "-output-directory", tmpdir, tex_path],
+                capture_output=True, text=True, timeout=60, cwd=tmpdir
+            )
+            
+        if os.path.exists(pdf_path):
+            job_store.update_status(job_id, "completed")
+            # Para el PDF, persistimos el path en una sub-llave de redis específicamente
+            from services.semantic_cache import semantic_cache
+            semantic_cache.client.setex(f"job:{job_id}:path", 3600, pdf_path)
+        else:
+            job_store.update_status(job_id, "failed", error="pdflatex failing to generate PDF")
+            
+    except Exception as e:
+        job_store.update_status(job_id, "failed", error=str(e))
+
+@app.post("/api/v1/compile-pdf/async")
+async def trigger_compile_pdf(request: CompileRequest, background_tasks: BackgroundTasks):
+    """Inicia la compilación en segundo plano y devuelve un job_id."""
+    job_id = job_store.create_job("pdf")
+    background_tasks.add_task(_bg_compile_task, job_id, request.latex)
+    return {"job_id": job_id, "status": "queued"}
+
+@app.post("/api/v1/compile-pdf-from-html/async")
+async def trigger_compile_pdf_html(request: CompileHtmlRequest, background_tasks: BackgroundTasks):
+    """Convierte HTML a LaTeX e inicia la compilación en segundo plano."""
+    job_id = job_store.create_job("pdf_html")
+    latex_body = html_to_latex(request.html)
+    
+    # Template wrapping logic (simplified for speed here)
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "generic.tex")
+    with open(template_path, "r", encoding="utf-8") as f:
+        full_latex = f.read()
+    
+    full_latex = full_latex.replace("<<TITLE>>", request.title)
+    full_latex = full_latex.replace("<<TOPIC>>", request.topic)
+    full_latex = full_latex.replace("<<COUNTRY>>", request.country)
+    full_latex = full_latex.replace("<<COMMITTEE>>", request.committee)
+    full_latex = full_latex.replace("<<CONTENT>>", latex_body)
+    
+    background_tasks.add_task(_bg_compile_task, job_id, full_latex)
+    return {"job_id": job_id, "status": "queued"}
+
 # --- ENDPOINTS DE CONTEXTO ---
+
+@app.get("/api/v1/telemetry")
+async def get_telemetry_stats():
+    """Retorna estadísticas de rendimiento, costos y latencia del sistema."""
+    return telemetry.get_summary()
 
 @app.get("/api/v1/notebook-status")
 async def notebook_status():

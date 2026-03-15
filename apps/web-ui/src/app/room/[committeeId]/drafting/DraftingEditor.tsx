@@ -1,16 +1,55 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { StarterKit } from '@tiptap/starter-kit';
-import { Image as TiptapImage } from '@tiptap/extension-image';
+import { Extension } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import TiptapImage from '@tiptap/extension-image';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { Underline } from '@tiptap/extension-underline';
-import { Placeholder } from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import Placeholder from '@tiptap/extension-placeholder';
+import Collaboration from '@tiptap/extension-collaboration';
+import { yCursorPlugin } from '@tiptap/y-tiptap';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+
+// Custom Collaboration Cursor extension to ensure compatibility with Tiptap v3 sync plugin
+const LocalCollaborationCursor = Extension.create({
+  name: 'collaborationCursor',
+  addOptions() {
+    return {
+      provider: null,
+      user: { name: null, color: null },
+      render: (user: any) => {
+        const cursor = document.createElement('span');
+        cursor.classList.add('collaboration-cursor__caret');
+        cursor.setAttribute('style', `border-color: ${user.color}; border-left: 2px solid ${user.color}; height: 1.2em; display: inline-block; position: relative;`);
+        
+        const label = document.createElement('div');
+        label.classList.add('collaboration-cursor__label');
+        label.setAttribute('style', `background-color: ${user.color}; position: absolute; top: -1.4em; left: -1px; font-size: 10px; color: white; padding: 2px 6px; border-radius: 3px; white-space: nowrap; font-weight: bold;`);
+        label.innerText = user.name || 'Anónimo';
+        
+        cursor.appendChild(label);
+        return cursor;
+      },
+    };
+  },
+  addProseMirrorPlugins() {
+    if (!this.options.provider || !this.options.provider.awareness) {
+      return [];
+    }
+    return [
+      yCursorPlugin(this.options.provider.awareness, {
+        cursorBuilder: this.options.render,
+      }),
+    ];
+  },
+});
 
 interface Props {
   viewMode: 'edit' | 'latex';
@@ -38,10 +77,59 @@ const COMMITTEES: Record<string, { name: string; sub: string; color: string; art
 
 export default function DraftingEditor({ viewMode, content, params, onContentChange }: Props) {
   const { committeeId } = useParams();
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      StarterKit,
+  const committeeKey = String(committeeId || '').toUpperCase();
+  const committeeInfo = COMMITTEES[committeeKey];
+  const [zoom, setZoom] = useState(1.1);
+
+  // --- COLLABORATION SETUP ---
+  // Create ydoc and provider in a single stable useMemo.
+  const { ydoc, provider } = useMemo(() => {
+    const doc = new Y.Doc();
+    if (typeof window === 'undefined') return { ydoc: doc, provider: null };
+    
+    const roomName = `committee_${String(committeeId || '').toUpperCase() || 'default'}`;
+    const wsProvider = new WebsocketProvider(
+      'ws://localhost:1234', 
+      roomName, 
+      doc
+    );
+    return { ydoc: doc, provider: wsProvider };
+  }, [committeeId]);
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      provider?.disconnect();
+      provider?.destroy();
+      ydoc?.destroy();
+    };
+  }, [provider, ydoc]);
+
+  // Update awareness when delegation or provider changes
+  useEffect(() => {
+    if (provider && provider.awareness) {
+      const colors = ['#00f5ff', '#c44dff', '#ffec1a', '#ff4d4d', '#4dff88', '#ff9f43'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      const currentState = provider.awareness.getLocalState();
+      provider.awareness.setLocalStateField('user', {
+        name: params?.delegation || 'Delegado Anónimo',
+        color: currentState?.user?.color || randomColor,
+      });
+    }
+  }, [params?.delegation, provider]);
+
+  // Compute extensions once and keep them stable.
+  const extensions = useMemo(() => {
+    const list = [
+      (StarterKit as any).configure({
+        history: false,
+      }),
+      Collaboration.configure({
+        document: ydoc,
+      }),
       Underline,
       TiptapImage.configure({ inline: true, allowBase64: true }),
       Table.configure({ resizable: true }),
@@ -51,26 +139,36 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
       Placeholder.configure({
         placeholder: 'El lienzo está listo. Empieza a redactar o usa la IA...',
       }),
-    ],
-    content: content || '',
+    ] as any[];
+
+    if (provider) {
+      list.push(
+        LocalCollaborationCursor.configure({
+          provider: provider,
+          user: {
+            name: params?.delegation || 'Delegado Anónimo',
+            color: '#00f5ff',
+          },
+        })
+      );
+    }
+    
+    return list.filter(Boolean);
+  }, [ydoc, provider, params?.delegation]);
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions,
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[500px]',
+        class: 'prose prose-slate max-w-none focus:outline-none min-h-[600px] text-black pb-40',
+        style: 'color: black !important;',
       },
     },
-  });
-
-  // Keep editor in sync with external content
-  useEffect(() => {
-    if (editor && content) {
-      if (editor.getHTML() !== content) {
-        editor.commands.setContent(content);
-      }
-    }
-  }, [editor, content]);
+  }, [extensions]);
 
   // Listen for AI content insertion events
   useEffect(() => {
@@ -89,6 +187,7 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
       editor.chain().focus().setImage({ src: url }).run();
     }
   };
+
   const toLaTeX = () => {
     if (!editor) return '';
     const html = editor.getHTML();
@@ -116,13 +215,13 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
 
     doc += `\\begin{document}\n\n`;
     
-    const committeeName = (committeeId && COMMITTEES[committeeId as string]?.name) || String(committeeId || 'Comité');
-    const article = (committeeId && COMMITTEES[committeeId as string]?.article) || 'El';
+    const committeeName = committeeInfo?.name || String(committeeId || 'Comité');
+    const article = committeeInfo?.article || 'El';
 
     // UN LOGO & COMMITTEE BOX
     doc += `\\noindent\n`;
     doc += `\\begin{minipage}[t]{0.15\\textwidth}\n`;
-    doc += `  \\includegraphics[width=2.5cm]{un_logo_bw}\n`; // Placeholder for logo
+    doc += `  \\includegraphics[width=2.5cm]{un_logo_bw}\n`; 
     doc += `\\end{minipage}\n`;
     doc += `\\begin{minipage}[t]{0.5\\textwidth}\n`;
     doc += `  \\vspace{0.3cm}\n`;
@@ -173,30 +272,96 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
     doc += `\n\n\\end{document}`;
     return doc;
   };
-;
 
-  if (!editor) return null;
+  if (!isMounted || !editor) return null;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="px-6 py-3 border-b border-white/10 bg-white/[0.02] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1">
-              <button onClick={() => editor.chain().focus().toggleBold().run()} className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs transition ${editor.isActive('bold') ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'hover:bg-white/5 text-white/40'}`}><b>B</b></button>
-              <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs transition ${editor.isActive('italic') ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'hover:bg-white/5 text-white/40'}`}><i>I</i></button>
-              <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs transition ${editor.isActive('underline') ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'hover:bg-white/5 text-white/40'}`}><u>U</u></button>
-              <div className="w-px h-4 bg-white/10 mx-2" />
-              <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`w-12 h-9 rounded-xl flex items-center justify-center text-[10px] font-black uppercase transition ${editor.isActive('bulletList') ? 'bg-cyan-500 text-black' : 'hover:bg-white/5 text-white/40'}`}>List</button>
-              <button onClick={addImage} className="w-10 h-9 rounded-xl flex items-center justify-center text-xs hover:bg-white/5 text-white/40 transition">🖼️</button>
-              <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="w-10 h-9 rounded-xl flex items-center justify-center text-xs hover:bg-white/5 text-white/40 transition">表格</button>
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#020617]">
+      {/* TOOLBAR */}
+      <div className="px-6 py-4 border-b border-white/10 bg-white/[0.03] flex items-center justify-between shrink-0 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+              <button 
+                onClick={() => editor.chain().focus().toggleBold().run()} 
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all border ${editor.isActive('bold') ? 'bg-cyan-500 text-black border-cyan-500 shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'}`}
+              >
+                B
+              </button>
+              <button 
+                onClick={() => editor.chain().focus().toggleItalic().run()} 
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm italic transition-all border ${editor.isActive('italic') ? 'bg-cyan-500 text-black border-cyan-500 shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'}`}
+              >
+                I
+              </button>
+              <button 
+                onClick={() => editor.chain().focus().toggleUnderline().run()} 
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm underline transition-all border ${editor.isActive('underline') ? 'bg-cyan-500 text-black border-cyan-500 shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'}`}
+              >
+                U
+              </button>
+              
+              <div className="w-px h-6 bg-white/10 mx-2" />
+              
+              <button 
+                onClick={() => editor.chain().focus().toggleBulletList().run()} 
+                className={`px-4 h-10 rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border ${editor.isActive('bulletList') ? 'bg-cyan-500 text-black border-cyan-500' : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'}`}
+              >
+                List
+              </button>
+              <button 
+                onClick={addImage} 
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-white/5 border border-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                title="Insertar Imagen"
+              >
+                🖼️
+              </button>
+              <button 
+                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} 
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-white/5 border border-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                title="Insertar Tabla"
+              >
+                📊
+              </button>
           </div>
-          <div className="text-[8px] font-black uppercase tracking-[0.3em] text-cyan-400/40">Canvas v2.1</div>
+
+          <div className="flex items-center gap-6">
+              <div className="flex items-center gap-1 bg-black/40 px-4 py-1.5 rounded-2xl border border-white/10 shadow-inner">
+                  <button 
+                    onClick={() => setZoom(Math.max(0.4, zoom - 0.1))} 
+                    className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-cyan-400 transition-colors text-lg font-bold"
+                  >
+                    −
+                  </button>
+                  <span className="text-[11px] font-black text-white/80 w-14 text-center tabular-nums">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <button 
+                    onClick={() => setZoom(Math.min(2.0, zoom + 0.1))} 
+                    className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-cyan-400 transition-colors text-lg font-bold"
+                  >
+                    +
+                  </button>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-cyan-400 animate-pulse">Canvas v2.5</span>
+                <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Hi-Fi Precision</span>
+              </div>
+          </div>
       </div>
 
-      <div className="flex-1 overflow-hidden relative flex flex-col h-full">
+      <div className="flex-1 overflow-hidden relative flex flex-col h-full bg-[#020617]">
         {viewMode === 'edit' ? (
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#020617] selection:bg-cyan-500/30 h-full">
+          <div className="flex-1 overflow-auto p-12 custom-scrollbar selection:bg-cyan-500/30">
             {/* PAPER SIMULATION - OFFICIAL UN STYLE (B&W) */}
-            <div className={`max-w-[210mm] mx-auto bg-white text-black min-h-[297mm] p-[25mm] shadow-[0_0_100px_rgba(0,0,0,0.5)] font-serif relative transition-all duration-700 ${params.docType === 'Proyecto de Resolución' ? 'resolution-numbered' : ''}`}>
+            <div 
+                className={`max-w-[210mm] mx-auto text-black min-h-[297mm] p-[25mm] shadow-[0_0_80px_rgba(0,0,0,0.8)] font-serif relative transition-all duration-300 origin-top ${params.docType === 'Proyecto de Resolución' ? 'resolution-numbered' : ''}`}
+                style={{ 
+                    transform: `scale(${zoom})`, 
+                    marginBottom: `${(zoom - 1) * 350}mm`,
+                    backgroundColor: 'white',
+                    color: 'black',
+                    display: 'block'
+                }}
+            >
                 
                 {/* STRICT UN HEADER FROM IMAGES */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10pt', fontFamily: 'serif', marginBottom: '2px' }}>
@@ -215,7 +380,7 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
                           alt="UN Logo"
                         />
                         <h1 style={{ fontSize: '18pt', fontWeight: 900, fontFamily: 'serif', margin: 0, textTransform: 'none' }}>
-                            {String((committeeId && COMMITTEES[committeeId as string]?.name) || committeeId || 'Comité')}
+                            {String(committeeInfo?.name || committeeId || 'Comité')}
                         </h1>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '9pt', fontFamily: 'serif', color: '#000' }}>
@@ -238,7 +403,7 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
                                 Aprobada por {((committeeId && COMMITTEES[committeeId as string]?.article) || 'El').toLowerCase() === 'el' ? 'el' : 'la'} {(committeeId && COMMITTEES[committeeId as string]?.name) || 'Asamblea General'} en su {params.session} sesión, celebrada el {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
                             </div>
                             <div style={{ fontSize: '11pt', fontStyle: 'italic', marginTop: '20px' }}>
-                                {(committeeId && COMMITTEES[committeeId as string]?.article) || 'El'} {(committeeId && COMMITTEES[committeeId as string]?.name) || 'Asamblea General'},
+                                {committeeInfo?.article || 'El'} {committeeInfo?.name || 'Asamblea General'},
                             </div>
                         </>
                     ) : (
@@ -268,7 +433,7 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto bg-[#020617]/90 p-12 font-mono text-sm leading-relaxed custom-scrollbar relative">
-            <div className="absolute top-4 right-8 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded text-[8px] font-black uppercase text-purple-400 tracking-widest animate-pulse">
+            <div className="absolute top-4 right-8 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded text-[10px] font-black uppercase text-purple-400 tracking-widest animate-pulse">
               LaTeX Engine Active
             </div>
             <pre className="max-w-3xl mx-auto whitespace-pre-wrap text-purple-300/80 selection:bg-purple-500/30">
@@ -278,9 +443,9 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
         )}
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .ProseMirror { outline: none; }
-        .prose-paper-editor h1 { display: none; } /* Hidden inside editor as header handles it */
+        .prose-paper-editor h1 { display: none; }
         .prose-paper-editor h2 { font-size: 14pt; font-weight: 700; color: black; margin-top: 25px; font-family: serif; text-transform: uppercase; }
         .prose-paper-editor h3 { font-size: 12pt; font-weight: 900; margin-top: 20px; color: black; font-family: serif; text-transform: uppercase; }
         .prose-paper-editor p { font-size: 11.5pt; line-height: 1.6; text-align: justify; margin-bottom: 12px; font-family: serif; color: black; position: relative; }
@@ -329,7 +494,33 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
           pointer-events: none;
           height: 0;
         }
-      `}</style>
+
+        /* Collaboration Cursors - High Fidelity Styles */
+        .collaboration-cursor__caret {
+          position: relative;
+          margin-left: -1px;
+          margin-right: -1px;
+          word-break: normal;
+          pointer-events: none;
+        }
+
+        .collaboration-cursor__label {
+          position: absolute;
+          top: -1.4em;
+          left: -1px;
+          font-size: 10px;
+          font-style: normal;
+          font-weight: 900;
+          line-height: normal;
+          user-select: none;
+          padding: 2px 8px;
+          border-radius: 4px 4px 4px 0;
+          white-space: nowrap;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+      ` }} />
     </div>
   );
 }

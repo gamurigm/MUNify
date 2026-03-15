@@ -1,0 +1,641 @@
+{
+  "title": "IV Convenio de Ginebra (Protección de Civiles)",
+  "articles": [
+    {
+      "id": 1,
+      "text": "Las Altas Partes Contratantes se comprometen a respetar y a hacer respetar el presente Convenio en todas las circunstancias."
+    },
+    {
+      "id": 2,
+      "text": "Aparte de las disposiciones que deban entrar en vigor ya en tiempo de paz, el presente Convenio se aplicará en caso de guerra declarada o de cualquier otro conflicto armado que surja entre dos o varias de las Altas Partes Contratantes..."
+    },
+    {
+      "id": 3,
+      "text": "En caso de conflicto armado que no sea de carácter internacional y que surja en el territorio de una de las Altas Partes Contratantes, cada una de las Partes en conflicto tendrá la obligación de aplicar, como mínimo, las disposiciones siguientes: 1) Las personas que no participen directamente en las hostilidades... serán tratadas con humanidad, sin distinción alguna de carácter desfavorable basada en la raza, el color, la religión o la creencia, el sexo, el nacimiento o la fortuna, o cualquier otro criterio análogo. Con este fin, se prohíben en cualquier tiempo y lugar... a) los atentados contra la vida y la integridad corporal, especialmente el homicidio en todas sus formas, las mutilaciones, los tratos crueles, la tortura y los suplicios; b) la toma de rehenes; c) los atentados contra la dignidad personal, especialmente los tratos humillantes y degradantes; d) las condenas dictadas y las ejecuciones sin previo juicio ante un tribunal legítimamente constituido..."
+    },
+    {
+      "id": 4,
+      "text": "Son personas protegidas por el Convenio las que, en cualquier momento y de cualquier manera que sea, estén, en caso de conflicto o de ocupación, en poder de una Parte en conflicto o de una Potencia ocupante de la cual no sean nacionales..."
+    },
+    {
+      "id": 5,
+      "text": "Si una Parte en conflicto tiene razones serias para considerar que una persona protegida por el presente Convenio es sospechosa de realizar actividades perjudiciales para la seguridad del Estado... esa persona no podrá invocar los derechos y privilegios conferidos por el presente Convenio..."
+    },
+    {
+      "id": 6,
+      "text": "El presente Convenio se aplicará desde el comienzo de todo conflicto o de toda ocupación mencionados en el artículo 2..."
+    },
+    {
+      "id": 7,
+      "text": "Además de los acuerdos expresamente previstos en los artículos 11, 14, 15, 17, 36, 108, 109, 132, 133 y 149, las Altas Partes Contratantes podrán concertar otros acuerdos especiales sobre cualquier cuestión que juzguen oportuno arreglar particularmente..."
+    },
+    {
+      "id": 8,
+      "text": "Las personas protegidas no podrán, en ninguna circunstancia, renunciar parcial o totalmente a los derechos que se les aseguran en el presente Convenio..."
+    },
+    {
+      "id": 9,
+      "text": "El presente Convenio será aplicado con la colaboración y bajo el control de las Potencias Protectoras encargadas de salvaguardar los intereses de las Partes en conflicto..."
+    },
+    {
+      "id": 10,
+      "text": "Las disposiciones del presente Convenio no son óbice para las actividades humanitarias que el Comité Internacional de la Cruz Roja, o cualquier otro organismo humanitario imparcial, emprenda para la protección de las personas civiles y para el socorro que se les proporcione..."
+    },
+    {
+      "id": 11,
+      "text": "Las Altas Partes Contratantes podrán, en todo tiempo, convenir en encomendar a un organismo que ofrezca todas las garantías de imparcialidad y de eficacia las tareas que el presente Convenio asigna a las Potencias Protectoras..."
+    },
+    {
+      "id": 12,
+      "text": "En todos los casos en que lo juzguen conveniente en interés de las personas protegidas... las Potencias Protectoras prestarán sus buenos oficios para el arreglo de la diferencia..."
+    },
+    {
+      "id": 13,
+      "text": "Las disposiciones de la presente sección se aplican al conjunto de la población de los países en conflicto, sin distinción alguna, especialmente de raza, nacionalidad, religión u opiniones políticas, y tienden a aliviar los sufrimientos engendrados por la guerra."
+    },
+    {
+      "id": 14,
+      "text": "Ya desde el tiempo de paz, las Altas Partes Contratantes y, tras la apertura de las hostilidades, las Partes en conflicto podrán establecer en su propio territorio y, si es necesario, en los territorios ocupados, zonas y localidades sanitarias y de seguridad organizadas de manera que se proteja contra los efectos de la guerra a los heridos, a los enfermos, a los ancianos, a los niños menores de quince años, a las mujeres encintas y a las madres de niños menores de siete años..."
+    },
+    {
+      "id": 15,
+      "text": "Cualquier Parte en conflicto podrá proponer a la Parte adversaria el establecimiento, en las zonas donde tengan lugar los combates, de zonas neutralizadas destinadas a proteger contra los peligros de los combates, sin distinción alguna, a las personas siguientes: a) los heridos y los enfermos, combatientes o no; b) las personas civiles que no participen en las hostilidades y que no realicen trabajo alguno de carácter militar mientras permanezcan en esas zonas..."
+    },
+    {
+      "id": 16,
+      "text": "Se hará objeto de una protección y de un respeto especiales a los heridos y a los enfermos, así como a los inválidos y a las mujeres encintas."
+    },
+    {
+      "id": 17,
+      "text": "Las Partes en conflicto se esforzarán por concertar acuerdos locales para la evacuación de una zona sitiada o cercada de los heridos, de los enfermos, de los inválidos, de los ancianos, de los niños y de las mujeres encintas..."
+    },
+    {
+      "id": 18,
+      "text": "En ninguna circunstancia podrán ser objeto de ataques los hospitales civiles organizados para prestar asistencia a los heridos, a los enfermos, a los inválidos y a las mujeres en queda; deberán ser siempre respetados y protegidos por las Partes en conflicto..."
+    },
+    {
+      "id": 19,
+      "text": "La protección debida a los hospitales civiles no podrá cesar más que si se utilizan para cometer, fuera de los deberes humanitarios, actos perjudiciales para el enemigo..."
+    },
+    {
+      "id": 20,
+      "text": "El personal regular y exclusivamente destinado al funcionamiento o a la administración de los hospitales civiles... será respetado y protegido."
+    },
+    {
+      "id": 21,
+      "text": "Los transportes de hospitales civiles que circulen en convoyes de vehículos y de trenes sanitarios, o en buques especialmente designados en el mar, serán respetados y protegidos..."
+    },
+    {
+      "id": 22,
+      "text": "Serán respetadas y protegidas las aeronaves utilizadas exclusiva y temporalmente para la evacuación de los heridos y de los enfermos civiles, así como para el transporte del personal y del material sanitarios..."
+    },
+    {
+      "id": 23,
+      "text": "Cada Alta Parte Contratante autorizará el libre paso de todo envío de medicamentos y de material sanitario, así como de los objetos necesarios para el culto, destinados únicamente a la población civil de otra Alta Parte Contratante, aunque sea adversaria..."
+    },
+    {
+      "id": 24,
+      "text": "Las Partes en conflicto tomarán las medidas necesarias para que los niños menores de quince años, huérfanos o separados de su familia a causa de la guerra, no sean abandonados a su propia suerte, y para que se faciliten, en todas las circunstancias, su mantenimiento, el ejercicio de su religión y su educación..."
+    },
+    {
+      "id": 25,
+      "text": "Toda persona que se encuentre en el territorio de una Parte en conflicto, o en un territorio ocupado por ella, podrá dar a los miembros de su familia, dondequiera que estén, noticias de carácter estrictamente familiar y recibirlas de ellos..."
+    },
+    {
+      "id": 26,
+      "text": "Cada Parte en conflicto facilitará las indagaciones hechas por los miembros de familias dispersas a causa de la guerra para reanudar el contacto mutuo y, si es posible, para reunirse..."
+    },
+    {
+      "id": 27,
+      "text": "Las personas protegidas tienen derecho, en todas las circunstancias, a que se respeten su persona, su honor, sus derechos familiares, sus convicciones y prácticas religiosas, sus hábitos y sus costumbres. Serán tratadas en todo tiempo con humanidad y protegidas especialmente contra cualquier acto de violencia o de intimidación, contra los insultos y la curiosidad pública. Las mujeres serán protegidas especialmente contra cualquier atentado a su honor y, en particular, contra la violación, la prostitución forzada y todo atentado a su pudor..."
+    },
+    {
+      "id": 28,
+      "text": "No podrá utilizarse la presencia de una persona protegida para poner ciertos puntos o ciertas zonas a cubierto de operaciones militares."
+    },
+    {
+      "id": 29,
+      "text": "La Parte en conflicto en cuyo poder estén las personas protegidas es responsable del trato que les den sus agentes, sin perjuicio de las responsabilidades individuales en que se pueda incurrir."
+    },
+    {
+      "id": 30,
+      "text": "Las personas protegidas tendrán toda clase de facilidades para dirigirse a las Potencias Protectoras, al Comité Internacional de la Cruz Roja, a la Sociedad Nacional de la Cruz Roja (Media Luna Roja, León y Sol Rojos) del país donde se encuentren, así como a cualquier organismo que pueda ayudarlas..."
+    },
+    {
+      "id": 31,
+      "text": "No se ejercerá ninguna coacción de carácter físico o moral contra las personas protegidas, especialmente para obtener de ellas, o de terceros, informes."
+    },
+    {
+      "id": 32,
+      "text": "Las Altas Partes Contratantes se prohíben expresamente toda medida que pueda causar sufrimientos físicos o la exterminación de las personas protegidas en su poder... Esta prohibición se aplica no sólo al homicidio, a la tortura, a los castigos corporales, a las mutilaciones y a los experimentos médicos y científicos no requeridos por el tratamiento médico de una persona protegida, sino también a cualesquiera otros malos tratos..."
+    },
+    {
+      "id": 33,
+      "text": "No se castigará a ninguna persona protegida por infracciones que no haya cometido personalmente. Están prohibidos los castigos colectivos, así como toda medida de intimidación o de terrorismo. El pillaje está prohibido. Están prohibidas las represalias contra las personas protegidas y sus bienes."
+    },
+    {
+      "id": 34,
+      "text": "Está prohibida la toma de rehenes."
+    },
+    {
+      "id": 35,
+      "text": "Toda persona protegida que desee dejar el territorio al comienzo o durante un conflicto, tendrá derecho a hacerlo..."
+    },
+    {
+      "id": 36,
+      "text": "Las salidas autorizadas en virtud del artículo anterior se realizarán en condiciones satisfactorias de seguridad, higiene, salubridad y alimentación..."
+    },
+    {
+      "id": 37,
+      "text": "Las personas protegidas que se encuentren en detención preventiva o que cumplan una pena privativa de libertad, serán tratadas, durante su cautiverio, con humanidad..."
+    },
+    {
+      "id": 38,
+      "text": "Salvo las medidas especiales que el presente Convenio autoriza a tomar... las personas protegidas seguirán gozando, en principio, de las disposiciones relativas al trato de los extranjeros en tiempo de paz..."
+    },
+    {
+      "id": 39,
+      "text": "Las personas protegidas que, por causa del conflicto, perdieren su actividad lucrativa, tendrán la posibilidad de encontrar un trabajo remunerado..."
+    },
+    {
+      "id": 40,
+      "text": "No podrá obligarse a las personas protegidas a trabajar más que en la misma medida que a los nacionales de la Parte en cuyo territorio se encuentren..."
+    },
+    {
+      "id": 41,
+      "text": "Si la Potencia en cuyo poder estén las personas protegidas no juzga suficientes las otras medidas de control mencionadas en el presente Convenio, las medidas más severas a las que podrá recurrir serán el internamiento o la obligación de residir en un lugar determinado..."
+    },
+    {
+      "id": 42,
+      "text": "El internamiento de personas protegidas o su puesta en residencia forzosa sólo podrá ordenarse si la seguridad de la Potencia en cuyo poder están lo hace absolutamente necesario..."
+    },
+    {
+      "id": 43,
+      "text": "Toda persona protegida que haya sido internada o puesta en residencia forzosa tendrá derecho a que un tribunal o una junta administrativa competente... reconsidere en el plazo más breve la decisión tomada con respecto a ella..."
+    },
+    {
+      "id": 44,
+      "text": "Al tomar las medidas de control previstas en el presente Convenio, la Potencia en cuyo poder estén las personas protegidas no tratará como enemigos extranjeros... a los refugiados que no disfruten de la protección de ningún gobierno."
+    },
+    {
+      "id": 45,
+      "text": "Las personas protegidas no podrán ser trasladadas a una Potencia que no sea parte en el Convenio..."
+    },
+    {
+      "id": 46,
+      "text": "Las medidas restrictivas tomadas con respecto a las personas protegidas serán canceladas lo antes posible después del cese de las hostilidades..."
+    },
+    {
+      "id": 47,
+      "text": "Las personas protegidas que se encuentren en un territorio ocupado no podrán ser privadas, en ninguna circunstancia ni en forma alguna, de los beneficios del presente Convenio..."
+    },
+    {
+      "id": 48,
+      "text": "No se perjudicará a las personas protegidas que no sean nacionales de la Potencia cuyo territorio está ocupado..."
+    },
+    {
+      "id": 49,
+      "text": "Los traslados en masa o individuales, así como las deportaciones de personas protegidas del territorio ocupado al territorio de la Potencia ocupante o al de cualquier otro país, ocupado o no, están prohibidos, sea cual fuere el motivo..."
+    },
+    {
+      "id": 50,
+      "text": "La Potencia ocupante facilitará... el buen funcionamiento de los establecimientos dedicados a la asistencia y a la educación de los niños..."
+    },
+    {
+      "id": 51,
+      "text": "La Potencia ocupante no podrá obligar a las personas protegidas a servir en sus fuerzas armadas o auxiliares..."
+    },
+    {
+      "id": 52,
+      "text": "No se admitirá ninguna restricción al derecho al trabajo en territorio ocupado..."
+    },
+    {
+      "id": 53,
+      "text": "Está prohibido que la Potencia ocupante destruya bienes muebles o inmuebles... pertenecientes individual o colectivamente a personas particulares, al Estado..."
+    },
+    {
+      "id": 54,
+      "text": "La Potencia ocupante no podrá alterar el estatuto de los jueces y de los funcionarios públicos de los territorios ocupados..."
+    },
+    {
+      "id": 55,
+      "text": "En la medida de sus recursos, la Potencia ocupante tiene el deber de asegurar el abastecimiento de la población en víveres y productos médicos..."
+    },
+    {
+      "id": 56,
+      "text": "En la medida de sus recursos, la Potencia ocupante tiene el deber de asegurar y de mantener... los establecimientos y los servicios médicos y hospitalarios..."
+    },
+    {
+      "id": 57,
+      "text": "La Potencia ocupante no podrá requisar los hospitales civiles más que temporalmente y en caso de urgente necesidad..."
+    },
+    {
+      "id": 58,
+      "text": "La Potencia ocupante permitirá que los ministros de los cultos presten asistencia espiritual a sus correligionarios."
+    },
+    {
+      "id": 59,
+      "text": "Si la totalidad o una parte de la población de un territorio ocupado está insuficientemente abastecida, la Potencia ocupante aceptará las acciones de socorro en favor de dicha población..."
+    },
+    {
+      "id": 60,
+      "text": "Las acciones de socorro mencionadas no descargan en nada a la Potencia ocupante de las responsabilidades que le imponen los artículos 55, 56 y 59..."
+    },
+    {
+      "id": 61,
+      "text": "Los envíos de socorro estarán exentos de todo derecho de aduana, de entrada o de otros análogos..."
+    },
+    {
+      "id": 62,
+      "text": "Sujeto a imperiosas razones de seguridad, las personas protegidas que se encuentren en territorio ocupado podrán recibir los envíos individuales de socorro que se les remitan."
+    },
+    {
+      "id": 63,
+      "text": "Sujeto a medidas temporales y excepcionales que impongan imperiosas razones de seguridad de la Potencia ocupante, las Sociedades Nacionales de la Cruz Roja... podrán continuar sus actividades..."
+    },
+    {
+      "id": 64,
+      "text": "La legislación penal del territorio ocupado seguirá en vigor, salvo que la Potencia ocupante la derogue o la suspenda cuando sea una amenaza para su seguridad..."
+    },
+    {
+      "id": 65,
+      "text": "Las disposiciones penales dictadas por la Potencia ocupante no entrarán en vigor antes de haber sido publicadas y puestas en conocimiento de la población en su propio idioma..."
+    },
+    {
+      "id": 66,
+      "text": "En caso de infracción de las disposiciones penales dictadas por ella... la Potencia ocupante podrá entregar a los acusados a sus tribunales militares, no políticos..."
+    },
+    {
+      "id": 67,
+      "text": "Los tribunales no podrán aplicar más que las disposiciones legales anteriores a la infracción y conformes con los principios generales del derecho..."
+    },
+    {
+      "id": 68,
+      "text": "Las personas protegidas que cometan una infracción... cuya finalidad única sea perjudicar a la Potencia ocupante, pero que no sea un atentado contra la vida o la integridad corporal... no podrán ser castigadas más que con el internamiento o la simple prisión..."
+    },
+    {
+      "id": 69,
+      "text": "En todos los casos, el tiempo que los acusados hayan pasado en detención preventiva antes del juicio se deducirá de toda pena de prisión a la que sean condenados."
+    },
+    {
+      "id": 70,
+      "text": "La Potencia ocupante no podrá detener, procesar ni condenar a personas protegidas por actos cometidos o por opiniones expresadas antes de la ocupación..."
+    },
+    {
+      "id": 71,
+      "text": "No se podrá dictar ninguna sentencia por los tribunales competentes de la Potencia ocupante si no es tras un proceso regular."
+    },
+    {
+      "id": 72,
+      "text": "Los acusados tendrán derecho a presentar las pruebas necesarias para su defensa y podrán, en particular, hacer citar a testigos..."
+    },
+    {
+      "id": 73,
+      "text": "Los condenados tendrán derecho de apelación previsto por la legislación aplicada por el tribunal..."
+    },
+    {
+      "id": 74,
+      "text": "En todos los casos, los representantes de la Potencia Protectora tendrán derecho a asistir a las audiencias de los tribunales..."
+    },
+    {
+      "id": 75,
+      "text": "Si se dicta una sentencia de muerte, ésta no se ejecutará antes de que haya transcurrido un plazo de seis meses, por lo menos, a partir del momento en que la Potencia Protectora reciba la comunicación de la sentencia definitiva..."
+    },
+    {
+      "id": 76,
+      "text": "Las personas protegidas acusadas de infracciones serán recluidas en el país ocupado y, si fueren condenadas, allí deberán cumplir sus penas..."
+    },
+    {
+      "id": 77,
+      "text": "Las personas protegidas que hayan sido acusadas o condenadas por los tribunales en territorio ocupado serán entregadas, al finalizar la ocupación, con los expedientes correspondientes, a las autoridades del territorio liberado."
+    },
+    {
+      "id": 78,
+      "text": "Si la Potencia ocupante estima necesario, por imperiosas razones de seguridad, tomar medidas de seguridad con respecto a personas protegidas, podrá, como máximo, someterlas a residencia forzosa o a internamiento..."
+    },
+    {
+      "id": 79,
+      "text": "Las Partes en conflicto no podrán internar a personas protegidas más que de conformidad con las disposiciones de los artículos 41, 42, 43, 68 y 78."
+    },
+    {
+      "id": 80,
+      "text": "Los internados conservarán su plena capacidad civil y ejercerán los derechos que de ella se derivan en la medida en que sea compatible con su condición de internados."
+    },
+    {
+      "id": 81,
+      "text": "Las Partes en conflicto que internen a personas protegidas tendrán la obligación de atender gratuitamente a su mantenimiento y de darles los cuidados médicos que requiera su estado de salud..."
+    },
+    {
+      "id": 82,
+      "text": "La Potencia que interne reunirá a los internados, en la medida de lo posible, según su nacionalidad, su idioma y sus costumbres..."
+    },
+    {
+      "id": 83,
+      "text": "La Potencia que interne no establecerá los lugares de internamiento en regiones particularmente expuestas a los peligros de la guerra..."
+    },
+    {
+      "id": 84,
+      "text": "Los lugares de internamiento para personas protegidas estarán claramente separados de los lugares de internamiento para prisioneros de guerra y de los lugares de detención para personas privadas de libertad por cualquier otra causa."
+    },
+    {
+      "id": 85,
+      "text": "La Potencia que interne tiene el deber de tomar todas las medidas necesarias y posibles para que las personas protegidas sean alojadas, desde el comienzo del internamiento, en edificios o locales que ofrezcan todas las garantías de higiene y de salubridad..."
+    },
+    {
+      "id": 86,
+      "text": "La Potencia que interne pondrá a disposición de las personas internadas, sin distinción de cultos, locales adecuados para sus ejercicios religiosos."
+    },
+    {
+      "id": 87,
+      "text": "A menos que las internadas acepten otro régimen, se les proporcionará las facilidades necesarias para que ellas mismas puedan preparar sus alimentos adicionales..."
+    },
+    {
+      "id": 88,
+      "text": "En todos los lugares de internamiento existirán cantinas donde los internados puedan comprar, a precios que no excedan de los del mercado local, artículos alimenticios y objetos de uso corriente..."
+    },
+    {
+      "id": 89,
+      "text": "La ración alimentaria diaria de los internados será suficiente en cantidad, calidad y variedad para mantenerlos en buen estado de salud..."
+    },
+    {
+      "id": 90,
+      "text": "En todos los lugares de internamiento se pondrá a disposición de los internados agua potable en cantidad suficiente, así como instalaciones sanitarias compatibles con las reglas de la higiene..."
+    },
+    {
+      "id": 91,
+      "text": "En cada lugar de internamiento habrá una enfermería adecuada, bajo la dirección de un médico calificado, donde los internados reciban los cuidados que necesiten..."
+    },
+    {
+      "id": 92,
+      "text": "Las inspecciones médicas de los internados se harán por lo menos una vez al mes..."
+    },
+    {
+      "id": 93,
+      "text": "Los internados gozarán de completa libertad para el ejercicio de su religión..."
+    },
+    {
+      "id": 94,
+      "text": "La Potencia que interne fomentará las actividades intelectuales, educativas, recreativas y deportivas de los internados..."
+    },
+    {
+      "id": 95,
+      "text": "La Potencia que interne no podrá emplear a los internados como trabajadores a menos que ellos lo deseen..."
+    },
+    {
+      "id": 96,
+      "text": "Todo internado que trabaje tendrá derecho a una indemnización equitativa fijo por la Potencia que interne..."
+    },
+    {
+      "id": 97,
+      "text": "Se permitirá a los internados conservar sus efectos y objetos de uso personal..."
+    },
+    {
+      "id": 98,
+      "text": "Se permitirá a los internados recibir subsidios que les envíen sus familias, las Potencias Protectoras o los organismos de socorro..."
+    },
+    {
+      "id": 99,
+      "text": "En cada lugar de internamiento, el oficial encargado pondrá los artículos 80 a 143 del presente Convenio en conocimiento de los internados en su propio idioma."
+    },
+    {
+      "id": 100,
+      "text": "La disciplina en los lugares de internamiento deberá ser compatible con los principios de humanidad..."
+    },
+    {
+      "id": 101,
+      "text": "Los internados tendrán el derecho de presentar a las autoridades en cuyo poder estén peticiones relativas al régimen al que están sometidos..."
+    },
+    {
+      "id": 102,
+      "text": "En cada lugar de internamiento, los internados elegirán libremente cada seis meses y por escrutinio secreto a los miembros de un comité encargado de representarlos ante las autoridades..."
+    },
+    {
+      "id": 103,
+      "text": "Los comités de internados deberán contribuir al bienestar material, moral y espiritual de los mismos..."
+    },
+    {
+      "id": 104,
+      "text": "Los miembros de los comités de internados no estarán obligados a ningún otro trabajo si ello dificulta el cumplimiento de sus funciones."
+    },
+    {
+      "id": 105,
+      "text": "Tan pronto como se encuentre en su poder una persona protegida, la Potencia que interne le permitirá dar noticias a sus familiares..."
+    },
+    {
+      "id": 106,
+      "text": "Se permitirá a los internados expedir y recibir cartas y tarjetas postales..."
+    },
+    {
+      "id": 107,
+      "text": "Se permitirá a los internados recibir envíos individuales o colectivos que contengan, en particular, artículos alimenticios, ropa, medicamentos y objetos destinados a sus necesidades religiosas..."
+    },
+    {
+      "id": 108,
+      "text": "Sujeto a imperiosas razones de seguridad, se permitirán los envíos de libros y de otros objetos recreativos o educativos para los internados."
+    },
+    {
+      "id": 109,
+      "text": "Toda la correspondencia de los internados estará exenta de franqueo postal..."
+    },
+    {
+      "id": 110,
+      "text": "Sujeto a razones de seguridad, los internados podrán recibir la visita de sus familias, especialmente de sus parientes cercanos, a intervalos frecuentes..."
+    },
+    {
+      "id": 111,
+      "text": "En caso de fallecimiento de un internado, se extenderá un certificado de defunción conforme a las leyes del país..."
+    },
+    {
+      "id": 112,
+      "text": "Las autoridades encargadas de los internados velarán por que los internados fallecidos en cautiverio sean enterrados honrosamente, si es posible según los ritos de la religión a la que pertenecían..."
+    },
+    {
+      "id": 113,
+      "text": "Toda sanción disciplinaria compatible con la dignidad humana será permitida..."
+    },
+    {
+      "id": 114,
+      "text": "Se prohíben los castigos colectivos por actos individuales, los castigos corporales, el encarcelamiento en locales sin luz del día y, en general, toda forma de tortura o de crueldad."
+    },
+    {
+      "id": 115,
+      "text": "El oficial encargado del lugar de internamiento deberá investigar inmediatamente los hechos cometidos por los internados..."
+    },
+    {
+      "id": 116,
+      "text": "Las sanciones disciplinarias no podrán ser aplicadas más que por el oficial encargado o por un oficial que lo reemplace..."
+    },
+    {
+      "id": 117,
+      "text": "En todos los casos, los internados tendrán derecho a defenderse de las acusaciones disciplinarias que se les hagan."
+    },
+    {
+      "id": 118,
+      "text": "El traslado de los internados se hará siempre con humanidad..."
+    },
+    {
+      "id": 119,
+      "text": "En caso de traslado, los internados deben ser avisados oficialmente de su partida y de su nueva dirección postal..."
+    },
+    {
+      "id": 120,
+      "text": "La Potencia que interne facilitará el traslado del equipaje de los internados..."
+    },
+    {
+      "id": 121,
+      "text": "A falta de un acuerdo especial entre las Partes en conflicto, se hará el testamento de los internados por escrito..."
+    },
+    {
+      "id": 122,
+      "text": "En caso de fallecimiento de un internado, la Potencia que interne deberá enviar inmediatamente al Gobierno de quien dependía el fallecido el certificado de defunción..."
+    },
+    {
+      "id": 123,
+      "text": "Sujeto a razones de seguridad, los internados podrán ser liberados tan pronto como cesen las causas de su internamiento."
+    },
+    {
+      "id": 124,
+      "text": "Las Partes en conflicto se esforzarán por concertar, durante las hostilidades, acuerdos para la liberación, la repatriación o el internamiento en país neutral de ciertas categorías de internados, especialmente de los niños, de las mujeres encintas y de los heridos y enfermos."
+    },
+    {
+      "id": 125,
+      "text": "Al finalizar las hostilidades, cada Potencia que interne liberará a todos los internados tan pronto como sea posible."
+    },
+    {
+      "id": 126,
+      "text": "Las personas liberadas que no puedan regresar a su domicilio por falta de seguridad, tendrán derecho a la asistencia de la Potencia que interne para encontrar un refugio seguro."
+    },
+    {
+      "id": 127,
+      "text": "La Potencia que interne sufragará los gastos de repatriación de los internados liberados..."
+    },
+    {
+      "id": 128,
+      "text": "Las disposiciones de los artículos 121 y 122 se aplicarán a los efectos y al dinero de los internados fallecidos."
+    },
+    {
+      "id": 129,
+      "text": "Las Potencias Protectoras y el Comité Internacional de la Cruz Roja tendrán derecho a visitar todos los lugares de internamiento..."
+    },
+    {
+      "id": 130,
+      "text": "Tan pronto como comience el internamiento, se establecerá en cada Potencia que interne una oficina de información para internados..."
+    },
+    {
+      "id": 131,
+      "text": "Las oficinas de información centralizarán todas las noticias relativas a las personas protegidas internadas..."
+    },
+    {
+      "id": 132,
+      "text": "Tan pronto como comiencen las hostilidades, cada Parte en conflicto establecerá una Agencia Central de Información para personas protegidas..."
+    },
+    {
+      "id": 133,
+      "text": "La Agencia Central de Información podrá recibir de las oficinas de información gubernamentales todas las noticias relativas a personas protegidas..."
+    },
+    {
+      "id": 134,
+      "text": "Las Sociedades Nacionales de la Cruz Roja prestarán su colaboración a la Agencia Central de Información..."
+    },
+    {
+      "id": 135,
+      "text": "Las disposiciones de los artículos 130 a 134 no son óbice para las actividades humanitarias del Comité Internacional de la Cruz Roja..."
+    },
+    {
+      "id": 136,
+      "text": "Toda oficina de información y toda agencia central gozarán de franquicia postal para sus envíos..."
+    },
+    {
+      "id": 137,
+      "text": "En todos los casos en que se considere necesario buscar a personas desaparecidas, se aplicarán las disposiciones correspondientes de los artículos 130 a 136..."
+    },
+    {
+      "id": 138,
+      "text": "Sujeto a imperiosas razones de seguridad de la Potencia ocupante, las organizaciones humanitarias tendrán las mayores facilidades para el desempeño de sus tareas en favor de las personas protegidas."
+    },
+    {
+      "id": 139,
+      "text": "Las Altas Partes Contratantes facilitarán las visitas de los representantes de los organismos de socorro a los internados..."
+    },
+    {
+      "id": 140,
+      "text": "Las Altas Partes Contratantes permitirán a los organismos de socorro el libre paso de todo envío de socorro destinado a los internados..."
+    },
+    {
+      "id": 141,
+      "text": "Las disposiciones de los artículos 138 a 140 no restringen en nada el derecho de las Potencias Protectoras a vigilar la distribución de los envíos de socorro."
+    },
+    {
+      "id": 142,
+      "text": "Sujeto a los reglamentos que la Potencia que interne considere indispensables para su seguridad, los representantes de las organizaciones religiosas, sociedades de socorro o de cualquier otro organismo especializado que ayude a personas protegidas... recibirán de dicha Potencia todas las facilidades necesarias para visitar a los internados..."
+    },
+    {
+      "id": 143,
+      "text": "Los representantes de las Potencias Protectoras tendrán derecho a ir a todos los lugares donde haya personas protegidas... y podrán entrevistarse con ellas sin testigos..."
+    },
+    {
+      "id": 144,
+      "text": "Las Altas Partes Contratantes se comprometen a difundir, lo más ampliamente posible, el texto del presente Convenio en sus respectivos países..."
+    },
+    {
+      "id": 145,
+      "text": "Las Altas Partes Contratantes se comunicarán las traducciones oficiales del presente Convenio, así como las leyes y reglamentos que puedan adoptar para asegurar su aplicación."
+    },
+    {
+      "id": 146,
+      "text": "Las Altas Partes Contratantes se comprometen a tomar todas las medidas legislativas necesarias para fijar las adecuadas sanciones penales que se han de aplicar a las personas que hayan cometido, o dado orden de cometer, cualquiera de las infracciones graves contra el presente Convenio definidas en el artículo siguiente..."
+    },
+    {
+      "id": 147,
+      "text": "Las infracciones graves a las que se refiere el artículo anterior son las que comprenden cualquiera de los actos siguientes, si se cometen contra personas o bienes protegidos por el Convenio: el homicidio intencional, la tortura o los tratos inhumanos, incluidos los experimentos biológicos, el hecho de causar deliberadamente grandes sufrimientos o de atentar gravemente contra la integridad física o la salud, la deportación o el traslado ilegales, la detención ilegal, el hecho de obligar a una persona protegida a servir en las fuerzas armadas de la Potencia enemiga, o al de privarla de su derecho a ser juzgada legítima e imparcialmente según las disposiciones del presente Convenio, la toma de rehenes, la destrucción y la apropiación de bienes, no justificadas por necesidades militares y efectuadas a gran escala, ilícita y arbitrariamente."
+    },
+    {
+      "id": 148,
+      "text": "Ninguna Alta Parte Contratante podrá exonerarse a sí misma, ni exonerar a otra Parte Contratante, de las responsabilidades en que haya incurrido ella misma u otra Parte Contratante a causa de las infracciones previstas en el artículo anterior."
+    },
+    {
+      "id": 149,
+      "text": "A petición de una Parte en conflicto, deberá iniciarse un procedimiento de investigación, según la forma que se determine entre las Partes interesadas, sobre toda alegada violación del Convenio..."
+    },
+    {
+      "id": 150,
+      "text": "El presente Convenio está redactado en francés y en inglés. Ambos textos son igualmente auténticos..."
+    },
+    {
+      "id": 151,
+      "text": "El presente Convenio, que llevará la fecha de hoy, podrá ser firmado hasta el 12 de febrero de 1950, en nombre de las Potencias representadas en la Conferencia iniciada en Ginebra el 21 de abril de 1949..."
+    },
+    {
+      "id": 152,
+      "text": "El presente Convenio será ratificado lo antes posible y las ratificaciones serán depositadas en Berna..."
+    },
+    {
+      "id": 153,
+      "text": "El presente Convenio entrará en vigor seis meses después de haber sido depositados dos instrumentos de ratificación, por lo menos..."
+    },
+    {
+      "id": 154,
+      "text": "En las relaciones entre las Altas Partes Contratantes, el presente Convenio completa los Convenios de La Haya relativos a las leyes y costumbres de la guerra terrestre..."
+    },
+    {
+      "id": 155,
+      "text": "A partir de la fecha de su entrada en vigor, el presente Convenio quedará abierto a la adhesión de toda Potencia en nombre de la cual no haya sido firmado este Convenio."
+    },
+    {
+      "id": 156,
+      "text": "Las adhesiones se notificarán por escrito al Consejo Federal Suizo y surtirán efecto seis meses después de la fecha en que se reciban."
+    },
+    {
+      "id": 157,
+      "text": "Las situaciones previstas en los artículos 2 y 3 darán efecto inmediato a las ratificaciones depositadas y a las adhesiones notificadas por las Partes en conflicto antes o después del comienzo de las hostilidades o de la ocupación..."
+    },
+    {
+      "id": 158,
+      "text": "Cada una de las Altas Partes Contratantes tendrá la facultad de denunciar el presente Convenio..."
+    },
+    {
+      "id": 159,
+      "text": "El Consejo Federal Suizo hará registrar el presente Convenio en la Secretaría de las Naciones Unidas."
+    }
+  ]
+}

@@ -10,6 +10,8 @@ echo IP de WSL detectada: %WSL_IP%
 set "SPRING_DATASOURCE_URL=jdbc:postgresql://%WSL_IP%:5432/munify_db"
 set "DATABASE_URL=postgresql://munify_user:munify_password@%WSL_IP%:5432/munify_db"
 set "REDIS_URL=redis://%WSL_IP%:6379"
+echo Iniciando contenedores de infraestructura (Redis, Postgres)...
+wsl -d Ubuntu docker compose up -d redis postgres
 echo.
 
 echo [0/4] Limpiando procesos antiguos en puertos...

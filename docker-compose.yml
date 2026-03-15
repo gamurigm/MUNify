@@ -49,9 +49,24 @@ services:
     networks:
       - munify-network
 
+  # Base de Datos de Grafos (Neo4j)
+  neo4j:
+    image: neo4j:latest
+    container_name: munify-neo4j
+    ports:
+      - "7474:7474" # Browser UI
+      - "7687:7687" # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - munify-network
+
 networks:
   munify-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  neo4j_data:

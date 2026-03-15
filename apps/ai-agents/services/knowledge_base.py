@@ -4,7 +4,7 @@ import json
 import chromadb
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from sentence_transformers import SentenceTransformer
+from services.embedding_service import embedding_service
 import trafilatura
 import logfire
 
@@ -16,9 +16,8 @@ class ChromaKnowledgeBase:
         # 1. Inicializar Cliente Chroma (Persistente)
         self.client = chromadb.PersistentClient(path=str(self.db_path))
         
-        # 2. Cargar el modelo de embeddings (E5 Multilingual)
-        logfire.info("Loading Semantic Model: intfloat/multilingual-e5-small")
-        self.model = SentenceTransformer('intfloat/multilingual-e5-small')
+        # 2. El modelo de embeddings ahora se maneja vía Microservicio (Singleton)
+        self.embedder = embedding_service
         
         # 3. Crear o recuperar colecciones
         # treaties: Los documentos base de la ONU
@@ -30,6 +29,10 @@ class ChromaKnowledgeBase:
         self.memory_coll = self.client.get_or_create_collection(
             name="permanent_memory",
             metadata={"description": "Cleaned web research knowledge"}
+        )
+        self.cache_coll = self.client.get_or_create_collection(
+            name="llm_cache",
+            metadata={"description": "Semantic cache for LLM responses"}
         )
         
         # Comprobar si necesitamos indexar los tratados por primera vez
@@ -60,8 +63,8 @@ class ChromaKnowledgeBase:
                         ids.append(f"{title}_{art_id}")
 
                     if documents:
-                        # Generar embeddings
-                        embeddings = self.model.encode([f"pasaje: {d}" for d in documents]).tolist()
+                        # Generar embeddings usando el microservicio
+                        embeddings = self.embedder.encode(documents, prefix="pasaje: ")
                         self.treaties_coll.add(
                             embeddings=embeddings,
                             documents=documents,
@@ -87,7 +90,7 @@ class ChromaKnowledgeBase:
         chunks = [downloaded[i:i+1500] for i in range(0, len(downloaded), 1500)]
         
         for idx, chunk in enumerate(chunks):
-            embedding = self.model.encode([f"pasaje: {chunk}"]).tolist()
+            embedding = self.embedder.encode(chunk, prefix="pasaje: ")
             doc_id = f"web_{hash(url)}_{idx}"
             
             self.memory_coll.add(
@@ -99,55 +102,108 @@ class ChromaKnowledgeBase:
         
         logfire.info(f"Successfully indexed {len(chunks)} cleaned chunks from {url}")
 
-    def search_structured(self, query: str, top_k: int = 8):
-        """Busca en AMBAS colecciones y retorna resultados unificados."""
-        query_emb = self.model.encode([f"query: {query}"]).tolist()
+    def search_structured(self, query: str, top_k: int = 12):
+        """Busca en AMBAS colecciones y retorna resultados unificados con Scoring Híbrido."""
+        query_emb = self.embedder.encode(query, prefix="query: ")
+        query_words = set(query.lower().split())
         
         # Buscar en tratados
         treaty_res = self.treaties_coll.query(
             query_embeddings=query_emb,
-            n_results=top_k
+            n_results=top_k * 2 # Traemos más para el re-ranking
         )
         
         # Buscar en memoria permanente
         memory_res = self.memory_coll.query(
             query_embeddings=query_emb,
-            n_results=min(3, top_k) # Damos menos peso inicial a la memoria web
+            n_results=min(5, top_k)
         )
         
         results = []
         
-        # Procesar tratados
+        # Unión de resultados
+        to_process = []
         for i in range(len(treaty_res['documents'][0])):
-            doc_text = treaty_res['documents'][0][i]
-            meta = treaty_res['metadatas'][0][i]
+            to_process.append({
+                "text": treaty_res['documents'][0][i],
+                "meta": treaty_res['metadatas'][0][i],
+                "dist": treaty_res['distances'][0][i],
+                "type": "legal"
+            })
             
-            # Filtro administrativo (ruido)
-            if "Carta" in str(meta['treaty']) and str(meta['article_id']).isdigit():
-                art_num = int(meta['article_id'])
-                if 5 <= art_num <= 11 and str(art_num) not in query:
+        for i in range(len(memory_res['documents'][0])):
+            to_process.append({
+                "text": memory_res['documents'][0][i],
+                "meta": memory_res['metadatas'][0][i],
+                "dist": memory_res['distances'][0][i],
+                "type": "web"
+            })
+
+        for item in to_process:
+            text = item["text"]
+            meta = item["meta"]
+            
+            # 1. Score Semántico (Invertimos L2: 0 es mejor, 2 es peor)
+            # Normalizamos aprox: 1.0 (perfecto) a 0.0
+            sem_score = max(0, 1 - (item["dist"] / 1.5))
+            
+            # 2. Score de Palabras Clave (Hybrid)
+            text_words = set(text.lower().replace('[', ' ').replace(']', ' ').split())
+            overlap = len(query_words.intersection(text_words))
+            key_score = min(1.0, overlap / (len(query_words) + 1) * 2) # Bonus por coincidencia léxica
+            
+            # Score Final Híbrido (70% semántica, 30% palabras clave)
+            final_score = (sem_score * 0.7) + (key_score * 0.3)
+            
+            # Filtro administrativo (ruido en la Carta de la ONU)
+            if item["type"] == "legal" and "Carta" in str(meta['treaty']):
+                art_id = str(meta['article_id'])
+                if art_id.isdigit() and 5 <= int(art_id) <= 11 and art_id not in query:
                     continue
 
             results.append({
-                "score": treaty_res['distances'][0][i],
-                "treaty": meta['treaty'],
-                "id": meta['article_id'],
-                "text": doc_text
+                "score": final_score,
+                "treaty": meta['treaty'] if item["type"] == "legal" else meta['url'],
+                "id": meta['article_id'] if item["type"] == "legal" else "INVESTIGACIÓN",
+                "text": text
             })
 
-        # Procesar memoria permanente
-        for i in range(len(memory_res['documents'][0])):
-            results.append({
-                "score": memory_res['distances'][0][i],
-                "treaty": memory_res['metadatas'][0][i]['url'],
-                "id": "INVESTIGACIÓN",
-                "text": memory_res['documents'][0][i]
-            })
-
-        # Ordenar por distancia (Chroma usa L2 por defecto, menor es mejor)
-        results.sort(key=lambda x: x["score"])
+        # Ordenar por score (Mayor es mejor ahora)
+        results.sort(key=lambda x: x["score"], reverse=True)
         
         return results[:top_k]
+
+    def search_cache(self, query: str, limit: int = 1):
+        """Busca en el cache semántico."""
+        query_emb = self.embedder.encode(query, prefix="query: ")
+        res = self.cache_coll.query(
+            query_embeddings=query_emb,
+            n_results=limit
+        )
+        
+        results = []
+        for i in range(len(res['documents'][0])):
+            # Convertir distancia L2 a score de similitud (estimado)
+            # dist 0 = sim 1.0, dist 1.0 = sim 0.5 (aprox para E5)
+            distance = res['distances'][0][i]
+            score = max(0, 1 - (distance / 2))
+            
+            results.append({
+                "score": score,
+                "text": res['documents'][0][i]
+            })
+        return results
+
+    def add_to_cache(self, prompt: str, response: str):
+        """Guarda un prompt y su respuesta en el cache semántico."""
+        embedding = self.embedder.encode(prompt, prefix="query: ")
+        prompt_id = f"cache_{hash(prompt)}"
+        self.cache_coll.add(
+            embeddings=embedding,
+            documents=[response],
+            metadatas=[{"prompt": prompt[:200]}],
+            ids=[prompt_id]
+        )
 
 # Singleton
 knowledge_base = ChromaKnowledgeBase()
