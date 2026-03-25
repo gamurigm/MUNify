@@ -29,6 +29,8 @@ interface TerminalAgentUIProps {
   engineeringContext?: string;  // Content from .md files (Context Engineering)
   onClose?: () => void;
   onToggleExpand?: () => void;
+  onResize?: (height: number) => void;
+  isPopout?: boolean;
 }
 
 export default function TerminalAgentUI({ 
@@ -36,7 +38,9 @@ export default function TerminalAgentUI({
   documentType = "Position Paper",
   engineeringContext = "",
   onClose, 
-  onToggleExpand 
+  onToggleExpand,
+  onResize,
+  isPopout = false
 }: TerminalAgentUIProps) {
   const params = useParams();
   const committeeId = params?.committeeId || 'global';
@@ -88,6 +92,18 @@ export default function TerminalAgentUI({
       localStorage.setItem(`munify_msgs_${committeeId}`, JSON.stringify(messages));
     }
   }, [messages, isLoaded, committeeId]);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `munify_terminal_popout_${committeeId}` && e.newValue === 'active') {
+        if (!isPopout && onClose) {
+           onClose();
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [committeeId, isPopout, onClose]);
 
   const scrollToBottom = () => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -299,6 +315,52 @@ export default function TerminalAgentUI({
           handleInjectSource(knowledgeBase[id]);
        } else {
           setMessages(prev => [...prev, { role: 'system', content: `[ERROR] ID de fuente inválido o recurso inexistente: ${args[0]}` }]);
+       }
+       return;
+    }
+
+    if (cmd === 'draft' && args.length > 0) {
+       setMessages(prev => [...prev, { role: 'user', content: fullInput }]);
+       const section = args[0];
+       const keywords = args.slice(1).join(' ');
+       
+       if (!keywords) {
+         setMessages(prev => [...prev, { role: 'system', content: '[ERROR] Se requieren palabras clave. Uso: draft [sección] [palabra1 palabra2...]' }]);
+         return;
+       }
+
+       setMessages(prev => [...prev, { role: 'system', content: `[DRAFTING] Generando párrafo para la sección '${section.toUpperCase()}' usando palabras clave: '${keywords}'...` }]);
+       setIsLoading(true);
+       
+       try {
+         const res = await fetch(`http://${window.location.hostname}:8000/api/v1/agent/draft-paragraph`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             section,
+             keywords,
+             document_context: documentContext,
+             sources: knowledgeBase,
+             country: 'Delegación',
+             topic: 'Debate en curso'
+           }),
+         });
+         
+         if (res.ok) {
+           const data = await res.json();
+           setMessages(prev => [...prev, { 
+             role: 'agent', 
+             content: `[DRAFT_READY] Se ha generado una propuesta de redacción basada en ${data.sources_used.length} fuentes coincidentes.` ,
+             // Injecting custom data for the renderer
+             draftData: data
+           } as any]);
+         } else {
+            throw new Error('Drafting failed');
+         }
+       } catch (e) {
+         setMessages(prev => [...prev, { role: 'system', content: `[ERROR] No se pudo generar el párrafo: ${e}` }]);
+       } finally {
+         setIsLoading(false);
        }
        return;
     }
@@ -690,39 +752,101 @@ export default function TerminalAgentUI({
     s.domain.toLowerCase().includes(hubSearchQuery.toLowerCase())
   );
 
+  // --- RESIZE LOGIC ---
+  const [isResizing, setIsResizing] = useState(false);
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+  const stopResizing = () => {
+    setIsResizing(false);
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', stopResizing);
+  };
+  const handleResizeMove = (e: MouseEvent) => {
+    if (onResize) {
+      const newHeight = window.innerHeight - e.clientY;
+      if (newHeight > 150 && newHeight < window.innerHeight * 0.95) {
+        onResize(newHeight);
+      }
+    }
+  };
+
+  const handlePopout = () => {
+    const width = 800;
+    const height = 900;
+    const left = window.screenX + (window.innerWidth - width) / 2;
+    const top = window.screenY + (window.innerHeight - height) / 2;
+
+    localStorage.setItem(`munify_terminal_popout_${committeeId}`, 'active');
+    
+    window.open(
+      `${window.location.protocol}//${window.location.host}/room/${committeeId}/drafting/terminal-popout`, 
+      'MUNifyTerminal', 
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,status=no,location=no,toolbar=no`
+    );
+
+    // Reset indicator after a short delay
+    setTimeout(() => {
+       localStorage.removeItem(`munify_terminal_popout_${committeeId}`);
+    }, 1000);
+  };
+
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden bg-[#0a0f18]/95 backdrop-blur-xl">
+    <div className={`w-full h-full flex flex-col overflow-hidden bg-[#0a0f18]/95 backdrop-blur-3xl relative transition-all border-t border-[#00e5ff]/20 ${isPopout ? 'fixed inset-0 z-[1000]' : ''}`}>
+      
+      {/* Resizable Handle (Hidden in full/popout) */}
+      {!isPopout && onResize && (
+        <div 
+          onMouseDown={startResizing}
+          className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize hover:bg-[#00e5ff]/40 transition-colors z-[60] group"
+        >
+          <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-16 h-0.5 rounded-full bg-white/10 group-hover:bg-cyan-400/50" />
+        </div>
+      )}
+
       {/* Header — Clear resize controls */}
-      <div className="h-11 shrink-0 border-b border-[#00e5ff]/20 bg-gradient-to-r from-[#00e5ff]/10 to-transparent flex items-center justify-between px-3 select-none">
+      <div className="h-12 shrink-0 border-b border-[#00e5ff]/20 bg-black/40 flex items-center justify-between px-4 select-none">
         <div className="flex items-center gap-4">
           <div className="flex gap-2 mr-2">
             <div onClick={onClose} className="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-400 transition" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+            <div className="w-2 h-2 rounded-full bg-yellow-500/30" />
             <div onClick={onToggleExpand} className="w-3 h-3 rounded-full bg-green-500 cursor-pointer hover:bg-green-400 transition" />
           </div>
-          <span className="text-[#00e5ff] font-mono text-[11px] font-bold tracking-widest opacity-80 uppercase">
-             Matrix Sandbox :: Command_Center
+          <span className="text-[#00e5ff] font-mono text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2">
+             AGENT DRAFTING TERMINAL
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Pop-out Button */}
+          {!isPopout && (
+             <button 
+                onClick={handlePopout}
+                className="h-7 px-3 rounded-md bg-white/5 text-white/40 border border-white/10 hover:bg-[#00e5ff]/10 hover:text-[#00e5ff] hover:border-[#00e5ff]/40 transition-all text-[9px] font-black tracking-widest uppercase flex items-center gap-2"
+                title="Abrir en Ventana Independiente"
+             >
+                <span className="text-xs">↗</span> Pop
+             </button>
+          )}
+
           {/* Auto-Refine Toggle */}
           <button 
             onClick={() => setAutoRefine(!autoRefine)}
             className={`h-7 px-2 rounded-lg text-[9px] font-bold tracking-wider uppercase flex items-center gap-1 transition-all border ${autoRefine ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-white/30 border-white/5'}`}
             title={autoRefine ? 'Auto-Refine ON (cada 45s)' : 'Auto-Refine OFF'}
           >
-            {isRefining ? <span className="animate-spin">⟳</span> : '⟳'} Auto
+            {isRefining ? <span className="animate-spin text-[10px]">⟳</span> : '⟳'} Auto
           </button>
+          
           {/* Priority Queue Toggle */}
           <button 
             onClick={() => setShowKnowledgeHub(!showKnowledgeHub)}
-            className={`flex items-center gap-2 h-7 px-3 rounded-lg transition-all border ${showKnowledgeHub ? 'bg-[#00e5ff] text-black border-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.3)]' : 'bg-white/5 text-[#00e5ff] border-white/5 hover:bg-white/10 hover:border-[#00e5ff]/30'}`}
+            className={`flex items-center gap-2 h-7 px-3 rounded-lg transition-all border ${showKnowledgeHub ? 'bg-[#00e5ff] text-black border-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.3)]' : 'bg-white/5 text-[#00e5ff] border-white/5 hover:bg-[#00e5ff]/10 hover:border-[#00e5ff]/30'}`}
           >
-            <span className="text-[10px] font-black tracking-wider uppercase">📚 Queue ({knowledgeBase.length})</span>
+            <span className="text-[9px] font-black tracking-wider uppercase">Books ({knowledgeBase.length})</span>
           </button>
-          <span className="text-[#10b981] text-[8px] uppercase font-mono tracking-widest px-2 py-1 rounded-md bg-[#10b981]/10 border border-[#10b981]/20 animate-pulse hidden sm:inline">
-            ● LIVE
-          </span>
         </div>
       </div>
 
@@ -825,18 +949,55 @@ export default function TerminalAgentUI({
             }
             
             if (msg.role === 'agent') {
+              const isDraft = msg.content.includes('[DRAFT_READY]');
+              const draftData = (msg as any).draftData;
+
               return (
                 <div key={idx} className="mb-6 animate-in slide-in-from-left-2 duration-500">
                   <div className="flex items-center gap-2 mb-1.5 border-b border-[#00e5ff]/20 pb-1">
-                    <span className="text-[#00e5ff] font-bold uppercase text-[10px] tracking-widest px-1.5 py-0.5 bg-[#00e5ff]/10 rounded">OpenClaw Engine</span>
+                    <span className="text-[#00e5ff] font-bold uppercase text-[10px] tracking-widest px-1.5 py-0.5 bg-[#00e5ff]/10 rounded">
+                      {isDraft ? 'Drafting Matrix' : 'OpenClaw Engine'}
+                    </span>
                     <span className="text-white/30 text-[10px]">v2.1.0_beta</span>
                   </div>
-                  <div className="text-[#cbd5e1] whitespace-pre-wrap pl-2 leading-loose">
-                    {/* Pseudo-Markdown Highlighting (Simple) */}
-                    {msg.content.split('\n').map((line, i) => {
-                      return <div key={i} className="min-h-[1em]">{line.startsWith('-') ? <span className="text-[#00e5ff] mr-2">»</span> : null}{line}</div>;
-                    })}
-                  </div>
+                  
+                  {isDraft && draftData ? (
+                    <div className="bg-[#00e5ff]/5 border border-[#00e5ff]/20 rounded-xl p-5 mt-2 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {draftData.keywords_matched.map((kw: string, i: number) => (
+                           <span key={i} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/20 rounded">
+                             #{kw}
+                           </span>
+                        ))}
+                      </div>
+                      <div className="text-[#cbd5e1] text-[14px] leading-relaxed italic border-l-2 border-[#00e5ff] pl-4 mb-6">
+                        {draftData.draft}
+                      </div>
+                      <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black uppercase text-white/30 tracking-widest">Fuentes Utilizadas</span>
+                          <span className="text-[10px] text-white/60 font-mono italic">{draftData.sources_used.join(', ')}</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('insert-ai-content', { detail: `<p>${draftData.draft}</p>` }));
+                            setMessages(prev => [...prev, { role: 'system', content: `[CANVAS_SYNC] Párrafo inyectado exitosamente en el editor principal.` }]);
+                          }}
+                          className="px-6 py-2 bg-[#00e5ff] text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#00e5ff]/80 transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)] active:scale-95 flex items-center gap-2"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                          Copia al Canvas
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[#cbd5e1] whitespace-pre-wrap pl-2 leading-loose">
+                      {/* Pseudo-Markdown Highlighting (Simple) */}
+                      {msg.content.split('\n').map((line, i) => {
+                        return <div key={i} className="min-h-[1em]">{line.startsWith('-') ? <span className="text-[#00e5ff] mr-2">»</span> : null}{line}</div>;
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             }
@@ -900,7 +1061,7 @@ export default function TerminalAgentUI({
                       {hubSearchQuery ? "Ninguna fuente coincide con la búsqueda." : "No hay fuentes indexadas en la cola actualmente."}
                     </div>
                   )}
-                  {filteredKnowledge.map((source, i) => {
+                  {filteredKnowledge.map((source: KnowledgeSource, i: number) => {
                     // Encontrar el índice original en knowledgeBase
                     const originalIndex = knowledgeBase.findIndex(s => s === source);
                     

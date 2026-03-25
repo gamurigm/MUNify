@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import mammoth from 'mammoth';
+import HeatmapRelations from '@/components/HeatmapRelations';
+import RelationsTimeline from '@/components/RelationsTimeline';
 
 /* ───────── Committee data ───────── */
 const COMMITTEES: Record<string, { name: string; sub: string; color: string }> = {
@@ -76,6 +78,29 @@ export default function RoomPage() {
   const [timerMinimized, setTimerMinimized] = useState(true);
   const [timelineMinimized, setTimelineMinimized] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256); // 64 * 4
+  const [heatmapOpen, setHeatmapOpen] = useState(false);
+  const isResizing = useRef(false);
+
+  const startResizing = useCallback(() => {
+    isResizing.current = true;
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', stopResizing);
+    document.body.style.cursor = 'col-resize';
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', stopResizing);
+    document.body.style.cursor = 'default';
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return;
+    const newWidth = Math.max(200, Math.min(600, e.clientX - 10)); // Min 200, Max 600
+    setSidebarWidth(newWidth);
+  }, []);
 
   /* ── Session Timer ── */
   const [sessionSeconds, setSessionSeconds] = useState(0);
@@ -297,8 +322,11 @@ export default function RoomPage() {
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 flex p-2 gap-2 overflow-hidden min-h-0">
-        <aside className={`transition-all duration-500 flex flex-col gap-2 shrink-0 ${focusMode || !leftOpen ? 'w-0 opacity-0 pointer-events-none' : 'w-64'}`}>
+      <main className="relative z-10 flex-1 flex p-2 gap-0 overflow-hidden min-h-0">
+        <aside 
+          style={{ width: focusMode || !leftOpen ? 0 : sidebarWidth }}
+          className={`transition-all duration-500 flex flex-col gap-2 shrink-0 overflow-hidden ${focusMode || !leftOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        >
           <div className="flex-1 rounded-[32px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl flex flex-col overflow-hidden shadow-2xl relative">
             <div className="p-4 border-b border-white/5 bg-white/[0.01]">
               <div className="flex items-center justify-between mb-3 text-[9px] font-black uppercase tracking-widest text-cyan-400/60">
@@ -311,7 +339,7 @@ export default function RoomPage() {
                 <button onClick={addNewCountry} className="w-7 h-7 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 transition">+</button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-0.5 custom-scrollbar">
+            <div className="flex-[0.5] overflow-y-auto p-2 space-y-0.5 custom-scrollbar min-h-[150px]">
               {filteredCountries.map(c => {
                 const isPresent = participants.includes(c.code);
                 return (
@@ -319,30 +347,61 @@ export default function RoomPage() {
                     <div className={`w-3.5 h-3.5 rounded-sm border transition flex items-center justify-center shrink-0 ${isPresent ? 'bg-white border-white' : 'border-white/10'}`}>
                       {isPresent && <span className="text-black text-[9px] font-black">✓</span>}
                     </div>
-                    {c.code.startsWith('custom-') ? <div className="w-4 h-3 flex items-center justify-center text-[7px] bg-white/10 rounded-sm italic opacity-40">M</div> : <img src={`https://flagcdn.com/w40/${c.code}.png`} className="w-4 h-3 rounded-sm object-cover" alt="" />}
+                    {c.code.startsWith('custom-') ? (
+                      <div className="w-4 h-3 flex items-center justify-center text-[7px] bg-white/10 rounded-sm italic opacity-40">M</div>
+                    ) : (
+                      <img src={`https://flagcdn.com/w40/${c.code}.png`} className="w-4 h-3 rounded-sm object-cover" alt="" />
+                    )}
                     <span className={`text-[9px] font-bold truncate ${isPresent ? 'text-white' : 'text-white/20'}`}>{c.name}</span>
-                    {isPresent && <button onClick={(e) => { e.stopPropagation(); addToSpeakers(c); }} className="ml-auto opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-cyan-500/10 text-cyan-400 flex items-center justify-center hover:bg-cyan-500 hover:text-white transition">🎤</button>}
+                    {isPresent && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); addToSpeakers(c); }} 
+                        className="ml-auto opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-cyan-500/10 text-cyan-400 flex items-center justify-center hover:bg-cyan-500 hover:text-white transition"
+                      >
+                        🎤
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
-          <div className="h-32 rounded-[32px] border border-white/5 bg-white/[0.01] backdrop-blur-3xl p-4 flex flex-col justify-center space-y-2 shrink-0">
-             <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-white/20">
-               <span>Pase de Lista</span>
-               <span className="text-white/60">{participants.length}</span>
-             </div>
-             <div className="h-px bg-white/5" />
-             <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-purple-400/40">
-               <span>Simple (+1)</span>
-               <span className="text-purple-400/80">{simpleMajority}</span>
-             </div>
-             <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-amber-400/40">
-               <span>Calificada</span>
-               <span className="text-amber-400/80">{qualifiedMajority}</span>
-             </div>
+
+            <div className="flex-1 p-3 space-y-4 border-t border-white/5 bg-white/[0.01] overflow-y-auto custom-scrollbar">
+               <button 
+                  onClick={() => setHeatmapOpen(true)}
+                  className="w-full py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[8px] font-black uppercase tracking-[0.2em] hover:bg-cyan-500 hover:text-black transition-all mb-2"
+               >
+                  Expandir Mapa de Calor
+               </button>
+            </div>
+
+            <div className="h-32 rounded-t-[32px] border-t border-white/5 bg-white/[0.01] backdrop-blur-3xl p-4 flex flex-col justify-center space-y-2 shrink-0">
+               <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-white/20">
+                 <span>Pase de Lista</span>
+                 <span className="text-white/60">{participants.length}</span>
+               </div>
+               <div className="h-px bg-white/5" />
+               <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-purple-400/40">
+                 <span>Simple (+1)</span>
+                 <span className="text-purple-400/80">{simpleMajority}</span>
+               </div>
+               <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-amber-400/40">
+                 <span>Calificada</span>
+                 <span className="text-amber-400/80">{qualifiedMajority}</span>
+               </div>
+            </div>
           </div>
         </aside>
+
+        {/* Resize Handle */}
+        {!focusMode && leftOpen && (
+          <div 
+            onMouseDown={startResizing}
+            className="w-1.5 hover:w-2 group cursor-col-resize flex items-center justify-center transition-all bg-transparent hover:bg-cyan-500/10 shrink-0 mx-1 rounded-full active:bg-cyan-500/30"
+          >
+            <div className="w-0.5 h-8 bg-white/5 group-hover:bg-cyan-500/40 rounded-full" />
+          </div>
+        )}
 
         <section className={`transition-all duration-500 flex flex-col gap-2 min-w-0 flex-1 overflow-hidden h-full`}>
           <div className={`transition-all duration-500 overflow-hidden shrink-0 ${timerMinimized ? 'h-10' : 'h-52'}`}>
@@ -485,8 +544,38 @@ export default function RoomPage() {
         </section>
       </main>
 
+      {/* Floating Independent Heatmap Panel */}
+      {heatmapOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-12 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full max-w-5xl h-[85vh] bg-[#020617] border border-white/10 rounded-[40px] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden relative">
+              <header className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+                 <div className="flex flex-col">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tighter">Diplomatic Intelligence Matrix</h2>
+                    <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.4em]">Advanced Strategic Multi-Country Analysis</span>
+                 </div>
+                 <button 
+                  onClick={() => setHeatmapOpen(false)}
+                  className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl hover:bg-red-500/20 hover:text-red-500 transition-all font-light"
+                 >
+                    ✕
+                 </button>
+              </header>
+              <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                 <HeatmapRelations participants={participants} countries={allCountries} />
+              </div>
+              <footer className="p-6 border-t border-white/5 bg-white/[0.01] flex items-center justify-between text-[10px] font-black text-white/10 uppercase tracking-widest shrink-0">
+                 <span>{participants.length} Países en Análisis</span>
+                 <div className="flex gap-4">
+                    <span>Neural Context Engine v4.2</span>
+                    <span className="text-emerald-500/40 font-black">• LIVE RESEARCH ACTIVE</span>
+                 </div>
+              </footer>
+           </div>
+        </div>
+      )}
+
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }

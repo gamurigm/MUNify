@@ -37,7 +37,7 @@ export default function DraftingPage() {
   const router = useRouter();
   const [chatInput, setChatInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
-  const [terminalSizeMode, setTerminalSizeMode] = useState<'off' | 'compact' | 'mid' | 'full'>('off');
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'latex'>('edit');
   const [params, setParams] = useState({
     topic: '', 
@@ -46,6 +46,7 @@ export default function DraftingPage() {
     session: 'Sesión Ordinaria 2026',
     deepResearch: false
   });
+  const [terminalHeight, setTerminalHeight] = useState(256); // 256px (h-64)
 
   const [messages, setMessages] = useState<{ 
     role: 'user' | 'ai'; 
@@ -587,15 +588,10 @@ export default function DraftingPage() {
         </div>
         <div className="flex gap-2">
             <button 
-                onClick={() => {
-                  if (terminalSizeMode === 'off') setTerminalSizeMode('compact');
-                  else if (terminalSizeMode === 'compact') setTerminalSizeMode('mid');
-                  else if (terminalSizeMode === 'mid') setTerminalSizeMode('full');
-                  else setTerminalSizeMode('off');
-                }}
-                className={`px-4 py-2 rounded-xl text-[11px] font-black font-mono uppercase tracking-widest transition shadow-lg ${terminalSizeMode !== 'off' ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'}`}
+                onClick={() => setTerminalOpen(!terminalOpen)}
+                className={`px-4 py-2 rounded-xl text-[11px] font-black font-mono uppercase tracking-widest transition shadow-lg ${terminalOpen ? 'bg-cyan-500 text-black' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'}`}
             >
-              &gt;_ {terminalSizeMode === 'off' ? 'Terminal' : terminalSizeMode.toUpperCase()}
+              &gt;_ Terminal
             </button>
             <button 
                 onClick={() => setViewMode(viewMode === 'edit' ? 'latex' : 'edit')}
@@ -1150,23 +1146,19 @@ export default function DraftingPage() {
         </aside>
         </div>
 
-        {/* Sandbox Terminal Bottom Panel - Dynamic Sizes */}
-        {terminalSizeMode !== 'off' && (
-          <div className={`
-             transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) 
-             shrink-0 rounded-[32px] shadow-[0_-10px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden relative border border-cyan-500/20
-             ${terminalSizeMode === 'compact' ? 'h-64' : ''}
-             ${terminalSizeMode === 'mid' ? 'h-[55vh]' : ''}
-             ${terminalSizeMode === 'full' ? 'fixed inset-4 z-[200] !h-auto' : ''}
-          `}>
+        {/* Sandbox Terminal Bottom Panel */}
+        {terminalOpen && (
+          <div 
+            className="transition-all duration-500 shrink-0 rounded-[32px] shadow-[0_-10px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden relative border border-cyan-500/20"
+            style={{ height: `${terminalHeight}px` }}
+          >
             <TerminalAgentUI 
                 documentContext={editorContent} 
                 documentType={params.docType}
-                onClose={() => setTerminalSizeMode('off')}
+                onClose={() => setTerminalOpen(false)}
+                onResize={(h) => setTerminalHeight(h)}
                 onToggleExpand={() => {
-                   if (terminalSizeMode === 'compact') setTerminalSizeMode('mid');
-                   else if (terminalSizeMode === 'mid') setTerminalSizeMode('full');
-                   else setTerminalSizeMode('compact');
+                   setTerminalHeight(prev => prev > 400 ? 256 : 600);
                 }}
             />
           </div>
