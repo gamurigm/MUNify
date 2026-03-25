@@ -11,12 +11,19 @@ class AgentState(TypedDict):
     iteration_count: int
     research_data: List[str]
     legal_context: List[str]
-    draft: str        # Contenido LaTeX generado
-    draft_html: str   # HTML para Tiptap (convertido)
+    draft: str
+    draft_html: str
     is_valid: bool
     errors: List[str]
     strategy_guide: str
-    notebook_id: Optional[str] # Contexto profesional de NotebookLM
-    raw_findings: List[Dict[str, Any]] # Los 35+ resultados de investigación crudos
-    recommended_indices: List[int]     # Los que la IA sugiere
-    selected_indices: List[int]        # Los que el usuario elije
+    notebook_id: Optional[str]
+    # --- Deep Research v2 ---
+    knowledge_stack: List[str]       # Pila acumulativa de conocimiento (.md fragments)
+    research_brief_md: str           # Briefing final en Markdown
+    research_depth: int              # Ronda actual (0-3)
+    is_research_complete: bool       # Control del bucle iterativo
+    raw_findings: List[Dict[str, Any]]
+    recommended_indices: List[int]
+    selected_indices: List[int]
+    # --- User Feedback Loop ---
+    user_preferences: Dict[str, Any]  # {liked_domains, disliked_domains, liked_keywords, disliked_keywords}

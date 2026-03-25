@@ -1,63 +1,97 @@
 # pyre-ignore-all-errors
 import os
+# pyre-ignore[21]
 from langgraph.graph import StateGraph, END
 
 # Import Domain
+# pyre-ignore[21]
 from domain.state import AgentState
 
 # Import internal nodes
+# pyre-ignore[21]
 from nodes.agent_nodes import (
     librarian_node,
     scribe_node,
     validator_node,
     negotiator_node
 )
+# pyre-ignore[21]
 from nodes.research_nodes import (
-    research_planner_node,
-    research_executor_node,
-    research_reviewer_node,
-    research_synthesizer_node
+    researcher_node,
+    scraper_node,
+    evaluator_node,
+    synthesizer_node,
 )
 
 # Re-exporting utils for api.py compatibility
+# pyre-ignore[21]
 from utils.converters import latex_to_html, html_to_latex
 
-from langgraph.checkpoint.redis import RedisSaver
+# pyre-ignore[21]
+from langgraph.checkpoint.memory import MemorySaver
 
 # --- [GRAPH] CONSTRUCCIÓN DEL GRAFO ---
-# Configuración del Checkpointer persistente en Redis
-# Esto permite que el agente guarde su estado y pueda retomar la conversación o reintentar pasos fallidos.
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-memory = RedisSaver(redis_url=redis_url)
-# memory.setup() # Normally setup is called during compile or first run if needed
+try:
+    # pyre-ignore[21]
+    from langgraph.checkpoint.redis import RedisSaver
+    memory = RedisSaver(redis_url=redis_url)
+    print(f"[OK] Checkpointer conectado a Redis: {redis_url}")
+except Exception as e:
+    print(f"[WARN] Redis no disponible ({e}). Usando MemorySaver (en RAM).")
+    memory = MemorySaver()
 
 workflow = StateGraph(AgentState)
 
-# Nodes
-workflow.add_node("research_planner", research_planner_node)
-workflow.add_node("research_executor", research_executor_node)
-workflow.add_node("research_reviewer", research_reviewer_node)
-workflow.add_node("research_synthesizer", research_synthesizer_node)
+# ═══════════════════════════════════════════════════════════════
+# NODOS
+# ═══════════════════════════════════════════════════════════════
+
+# Deep Research v2 (iterativo)
+workflow.add_node("researcher", researcher_node)
+workflow.add_node("scraper", scraper_node)
+workflow.add_node("evaluator", evaluator_node)
+workflow.add_node("synthesizer", synthesizer_node)
+
+# Agentes existentes
 workflow.add_node("librarian", librarian_node)
 workflow.add_node("scribe", scribe_node)
 workflow.add_node("validator", validator_node)
 workflow.add_node("negotiator", negotiator_node)
 
-# Configuración de Paralelismo (Fan-out)
-# El planificador dispara tanto la investigación web como la legal simultáneamente
-workflow.set_entry_point("research_planner")
-workflow.add_edge("research_planner", "research_executor")
-workflow.add_edge("research_planner", "librarian")
+# ═══════════════════════════════════════════════════════════════
+# FLUJO: Investigación Iterativa + Pipeline de Redacción
+# ═══════════════════════════════════════════════════════════════
+#
+#  researcher → scraper → evaluator →(loop)→ researcher
+#                                    →(done)→ synthesizer
+#  librarian ─────────────────────────────────→ synthesizer
+#  synthesizer → scribe → validator → negotiator → END
+#
+workflow.set_entry_point("researcher")
 
-# Rama Web: Executor -> Reviewer (Ranking de fuentes)
-workflow.add_edge("research_executor", "research_reviewer")
+# Investigación iterativa: buscar → scrapear → evaluar
+workflow.add_edge("researcher", "scraper")
+workflow.add_edge("scraper", "evaluator")
 
-# Sincronización (Fan-in): Ambos flujos convergen para la síntesis
-workflow.add_edge("research_reviewer", "research_synthesizer")
-workflow.add_edge("librarian", "research_synthesizer")
+# Librarian en paralelo desde el inicio
+workflow.add_edge("researcher", "librarian")
 
-# Punto de conexión con el resto del flujo
-workflow.add_edge("research_synthesizer", "scribe")
+# Bucle condicional: ¿investigación completa?
+workflow.add_conditional_edges(
+    "evaluator",
+    lambda state: "done" if state.get("is_research_complete", True) else "loop",
+    {
+        "done": "synthesizer",
+        "loop": "researcher",
+    }
+)
+
+# Fan-in: synthesizer recibe de evaluator + librarian
+workflow.add_edge("librarian", "synthesizer")
+
+# Pipeline de redacción (existente)
+workflow.add_edge("synthesizer", "scribe")
 workflow.add_edge("scribe", "validator")
 
 workflow.add_conditional_edges(
@@ -71,10 +105,10 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("negotiator", END)
 
-# Compilar con interrupción antes de la síntesis para permitir selección del usuario
+# Compilar con interrupción antes de la síntesis
 app = workflow.compile(
     checkpointer=memory,
-    interrupt_before=["research_synthesizer"]
+    interrupt_before=["synthesizer"]
 )
 
-print("Grafo de Agentes MUNify configurado correctamente y refactorizado (Clean Architecture).")
+print("Grafo Deep Research v2 configurado (bucle iterativo + knowledge stack).")

@@ -1,9 +1,12 @@
 
+# pyre-ignore[21]
 import redis
 import json
 import hashlib
 from typing import Optional
+# pyre-ignore[21]
 import logfire
+# pyre-ignore[21]
 from services.knowledge_base import knowledge_base
 
 class SemanticCache:
@@ -26,11 +29,15 @@ class SemanticCache:
             return None
 
         # 1. Intento de Match Exacto (Speed 1ms)
-        cache_key = f"cache:exact:{self._get_hash(prompt)}"
-        exact_match = self.client.get(cache_key)
-        if exact_match:
-            logfire.info("Cache Hit: Match Exacto en Redis")
-            return exact_match
+        try:
+            cache_key = f"cache:exact:{self._get_hash(prompt)}"
+            exact_match = self.client.get(cache_key)
+            if exact_match:
+                logfire.info("Cache Hit: Match Exacto en Redis")
+                return exact_match
+        except Exception:
+            self.client = None  # Redis caído, deshabilitar
+            return None
 
         # 2. Intento de Match Semántico (Speed 50-100ms)
         try:
@@ -50,8 +57,11 @@ class SemanticCache:
             return
 
         # Guardar en Redis para match exacto
-        cache_key = f"cache:exact:{self._get_hash(prompt)}"
-        self.client.setex(cache_key, 3600 * 24, response) # Expira en 24h
+        try:
+            cache_key = f"cache:exact:{self._get_hash(prompt)}"
+            self.client.setex(cache_key, 3600 * 24, response) # Expira en 24h
+        except Exception:
+            self.client = None  # Redis caído, deshabilitar
 
         # Guardar en ChromaDB para match semántico
         try:

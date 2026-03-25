@@ -89,7 +89,7 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
     
     const roomName = `committee_${String(committeeId || '').toUpperCase() || 'default'}`;
     const wsProvider = new WebsocketProvider(
-      'ws://localhost:1234', 
+      `ws://${window.location.hostname}:1234`, 
       roomName, 
       doc
     );
@@ -177,8 +177,19 @@ export default function DraftingEditor({ viewMode, content, params, onContentCha
         editor.chain().focus().insertContent(e.detail).run();
       }
     };
+    const handleOverwrite = (e: any) => {
+      if (editor) {
+        editor.commands.setContent(e.detail, true); // true = emit update event
+      }
+    };
+    
     window.addEventListener('insert-ai-content', handleInsert);
-    return () => window.removeEventListener('insert-ai-content', handleInsert);
+    window.addEventListener('overwrite-ai-content', handleOverwrite);
+    
+    return () => {
+      window.removeEventListener('insert-ai-content', handleInsert);
+      window.removeEventListener('overwrite-ai-content', handleOverwrite);
+    };
   }, [editor]);
 
   const addImage = () => {

@@ -62,4 +62,6 @@ mun-doc/
 **/persistent_kb/
 *.index
 *.sqlite3
-
+*.db
+*.mv.db
+*/data/

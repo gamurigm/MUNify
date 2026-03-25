@@ -7,6 +7,7 @@ import Link from 'next/link';
 import CollaborativeEditor from '@/components/CollaborativeEditor';
 import AiAssistantPanel from '@/components/AiAssistantPanel';
 import NotesPanel from '@/components/NotesPanel';
+import TerminalAgentUI from '@/components/TerminalAgentUI';
 
 interface DocumentData {
   id: number;
@@ -29,6 +30,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
   // Panels State
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(true);
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('munify_token');
@@ -103,6 +105,12 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
           >
             ⚡ AI Assistant
           </button>
+          <button 
+            onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all border ${isTerminalOpen ? 'bg-[#00e5ff]/20 border-[#00e5ff]/40 text-[#00e5ff]' : 'bg-black/40 border-[#00e5ff]/20 text-[#00e5ff]/60 hover:bg-[#00e5ff]/10 hover:text-[#00e5ff]'}`}
+          >
+            &gt;_ Terminal
+          </button>
         </div>
 
         <div className="flex flex-col items-center">
@@ -146,10 +154,11 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         </div>
       </header>
 
-      {/* Main Workspace (3 columns) */}
-      <main className="relative z-10 flex-1 flex overflow-hidden">
+      {/* Main Workspace (3 columns + bottom terminal) */}
+      <main className="relative z-10 flex-1 flex flex-col overflow-hidden">
         
-        {/* Left Column: AI Assistant */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Column: AI Assistant */}
         <AiAssistantPanel isOpen={isAiPanelOpen} />
 
         {/* Center Column: Editor Canvas */}
@@ -186,6 +195,14 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         {/* Right Column: Notes & Tools */}
         <NotesPanel isOpen={isToolsPanelOpen} />
 
+        </div>
+
+        {/* Sandbox Terminal Bottom Panel */}
+        {isTerminalOpen && (
+          <div className="h-64 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-50 relative">
+            <TerminalAgentUI documentContext={doc.content} />
+          </div>
+        )}
       </main>
     </div>
   );

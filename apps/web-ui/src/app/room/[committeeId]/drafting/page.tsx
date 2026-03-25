@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import TerminalAgentUI from '@/components/TerminalAgentUI';
 
 // Dynamically import the editor to prevent SSR issues
 const DynamicEditor = dynamic(() => import('./DraftingEditor'), { 
@@ -36,6 +37,7 @@ export default function DraftingPage() {
   const router = useRouter();
   const [chatInput, setChatInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
+  const [terminalSizeMode, setTerminalSizeMode] = useState<'off' | 'compact' | 'mid' | 'full'>('off');
   const [viewMode, setViewMode] = useState<'edit' | 'latex'>('edit');
   const [params, setParams] = useState({
     topic: '', 
@@ -341,9 +343,17 @@ export default function DraftingPage() {
      window.dispatchEvent(new CustomEvent('insert-ai-content', { detail: suggestion }));
   };
 
+  useEffect(() => {
+    const handleDraftUpdate = (e: any) => {
+      setEditorContent(e.detail);
+    };
+    window.addEventListener('update-draft-content', handleDraftUpdate);
+    return () => window.removeEventListener('update-draft-content', handleDraftUpdate);
+  }, []);
+
   const fetchNotebookSources = async (nbId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/notebooks/${nbId}/sources`);
+      const res = await fetch(`http://${window.location.hostname}:8000/api/v1/notebooks/${nbId}/sources`);
       if (res.ok) {
         const data = await res.json();
         setNotebookSources(data.sources || []);
@@ -356,7 +366,7 @@ export default function DraftingPage() {
   const fetchAvailableNotebooks = async () => {
     setIsLoadingNotebooks(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/notebooks');
+      const res = await fetch(`http://${window.location.hostname}:8000/api/v1/notebooks`);
       if (res.ok) {
         const data = await res.json();
         setAvailableNotebooks(data.notebooks || []);
@@ -574,6 +584,17 @@ export default function DraftingPage() {
         </div>
         <div className="flex gap-2">
             <button 
+                onClick={() => {
+                  if (terminalSizeMode === 'off') setTerminalSizeMode('compact');
+                  else if (terminalSizeMode === 'compact') setTerminalSizeMode('mid');
+                  else if (terminalSizeMode === 'mid') setTerminalSizeMode('full');
+                  else setTerminalSizeMode('off');
+                }}
+                className={`px-4 py-2 rounded-xl text-[11px] font-black font-mono uppercase tracking-widest transition shadow-lg ${terminalSizeMode !== 'off' ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'}`}
+            >
+              &gt;_ {terminalSizeMode === 'off' ? 'Terminal' : terminalSizeMode.toUpperCase()}
+            </button>
+            <button 
                 onClick={() => setViewMode(viewMode === 'edit' ? 'latex' : 'edit')}
                 className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition border ${viewMode === 'latex' ? 'bg-purple-500/20 border-purple-500/40 text-purple-400' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'}`}
             >
@@ -595,8 +616,9 @@ export default function DraftingPage() {
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 flex overflow-hidden p-2 gap-2">
-        <section className="flex-1 rounded-[32px] border border-white/10 bg-[#021021]/40 backdrop-blur-3xl flex flex-col overflow-hidden relative shadow-2xl">
+      <main className="relative z-10 flex-1 flex flex-col overflow-hidden p-2 gap-2">
+        <div className="flex-1 flex overflow-hidden gap-2">
+          <section className="flex-1 rounded-[32px] border border-white/10 bg-[#021021]/40 backdrop-blur-3xl flex flex-col overflow-hidden relative shadow-2xl">
             
             <div className="flex-1 overflow-auto custom-scrollbar p-12">
                 <div className="flex-1 h-full min-h-0">
@@ -1122,6 +1144,28 @@ export default function DraftingPage() {
                 </div>
             </div>
         </aside>
+        </div>
+
+        {/* Sandbox Terminal Bottom Panel - Dynamic Sizes */}
+        {terminalSizeMode !== 'off' && (
+          <div className={`
+             transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) 
+             shrink-0 rounded-[32px] shadow-[0_-10px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden relative border border-cyan-500/20
+             ${terminalSizeMode === 'compact' ? 'h-64' : ''}
+             ${terminalSizeMode === 'mid' ? 'h-[55vh]' : ''}
+             ${terminalSizeMode === 'full' ? 'fixed inset-4 z-[200] !h-auto' : ''}
+          `}>
+            <TerminalAgentUI 
+                documentContext={editorContent} 
+                onClose={() => setTerminalSizeMode('off')}
+                onToggleExpand={() => {
+                   if (terminalSizeMode === 'compact') setTerminalSizeMode('mid');
+                   else if (terminalSizeMode === 'mid') setTerminalSizeMode('full');
+                   else setTerminalSizeMode('compact');
+                }}
+            />
+          </div>
+        )}
       </main>
 
       {isModalOpen && (

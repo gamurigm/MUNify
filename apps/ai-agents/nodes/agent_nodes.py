@@ -1,15 +1,23 @@
 # pyre-ignore-all-errors
 import re
+# pyre-ignore[21]
 import logfire
+# pyre-ignore[21]
 from langchain_core.messages import HumanMessage, SystemMessage
 
+# pyre-ignore[21]
 from domain.state import AgentState
+# pyre-ignore[21]
 from services.llm import tavily, scribe_llm, critic_llm
+# pyre-ignore[21]
 from services.knowledge_base import knowledge_base
+# pyre-ignore[21]
 from utils.converters import load_latex_template, latex_to_html
+# pyre-ignore[21]
 from utils.resolution_parser import resolution_ast
+# pyre-ignore[21]
 from notebook_service import notebook_service
-from services.knowledge_graph import knowledge_graph
+# from services.knowledge_graph import knowledge_graph  # Desactivado a petición del usuario
 
 # [SEARCH] 1. Agente Investigador (Tavily)
 @logfire.instrument("Researcher Node")
@@ -59,15 +67,15 @@ async def librarian_node(state: AgentState):
         except Exception as e:
             print(f"Error consultando NotebookLM: {e}")
 
-    # --- NUEVA CAPA: Knowledge Graph (Neo4j) ---
-    try:
-        country = state.get("country", "")
-        related_treaties = knowledge_graph.get_related_treaties(country)
-        if related_treaties:
-            treaties_str = ", ".join(related_treaties)
-            context.append(f"TRATADOS VINCULANTES PARA {country.upper()}: {treaties_str}")
-    except Exception as e:
-        print(f"Error consultando Knowledge Graph: {e}")
+    # --- CAPA DESACTIVADA: Knowledge Graph (Neo4j) ---
+    # try:
+    #     country = state.get("country", "")
+    #     related_treaties = knowledge_graph.get_related_treaties(country)
+    #     if related_treaties:
+    #         treaties_str = ", ".join(related_treaties)
+    #         context.append(f"TRATADOS VINCULANTES PARA {country.upper()}: {treaties_str}")
+    # except Exception as e:
+    #     print(f"Error consultando Knowledge Graph: {e}")
 
     print(f"[OK] Se encontraron {len(legal_context)} documentos legales relevantes.")
     return {"legal_context": context}
@@ -202,6 +210,8 @@ async def negotiator_node(state: AgentState):
     draft_text_str = str(state.get("draft", ""))
     country = state.get("country", "Unknown")
     topic = state.get("topic", "Unknown")
+    # pyre-ignore[6, 16]
+    doc_preview = draft_text_str[:2000]
     prompt = f"""Basado en este documento redactado por {country} sobre {topic},
     genera una guía estratégica para el delegado:
     1. Identifica 3 países/bloques que apoyen esta posición.
@@ -209,7 +219,7 @@ async def negotiator_node(state: AgentState):
     3. Sugiere 2 puntos de negociación donde se pueda ceder.
     
     DOCUMENTO:
-    {draft_text_str[:2000]}
+    {doc_preview}
     """
     
     response = critic_llm.invoke([

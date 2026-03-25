@@ -12,6 +12,8 @@ from typing import List, Optional, Any, Dict
 from dotenv import load_dotenv  # pyre-ignore
 from pathlib import Path
 import asyncio
+import json
+import re
 
 # Variable global para trackear el proceso de login interactivo
 login_process_store: Dict[str, subprocess.Popen] = {}
@@ -23,7 +25,7 @@ load_dotenv(dotenv_path=env_path)
 # Initialize Logfire
 logfire.configure(
     token=os.getenv("LOGFIRE_TOKEN"),
-    send_to_logfire=True,
+    send_to_logfire=bool(os.getenv("LOGFIRE_TOKEN")),
     inspect_arguments=False
 )
 
@@ -39,8 +41,8 @@ logfire.info("MUNify AI Agents Service Started")
 from main import app as agent_workflow  # pyre-ignore
 from main import latex_to_html, html_to_latex  # pyre-ignore
 from notebook_service import notebook_service
-from services.job_store import job_store
-from services.telemetry import telemetry
+from services.job_store import job_store  # type: ignore
+from services.telemetry import telemetry  # type: ignore
 
 from fastapi.middleware.cors import CORSMiddleware # pyre-ignore
 
@@ -188,7 +190,7 @@ def _prepare_initial_state(request: GenerateRequest) -> Dict[str, Any]:
     }
 
 def _prepare_config(request: GenerateRequest) -> Dict[str, Any]:
-    thread_id = request.threadId or f"draft_{request.committee}_{request.country}_{request.topic[:10]}"
+    thread_id = request.threadId or f"draft_{request.committee}_{request.country}_{str(request.topic)[:10]}"  # pyre-ignore
     return {
         "configurable": {"thread_id": thread_id},
         "recursion_limit": 20
@@ -199,16 +201,16 @@ def _format_generate_response(result: Dict[str, Any], thread_id: str = "") -> Ge
     is_interrupted = len(result.get("research_data", [])) == 0 and len(result.get("raw_findings", [])) > 0
     
     return GenerateResponse(
-        status="waiting_selection" if is_interrupted else "completed",
-        draft=str(result.get("draft", "")),
-        draft_html=str(result.get("draft_html", "")),
-        strategy_guide=str(result.get("strategy_guide", "")),
-        errors=result.get("errors", []),
-        research_data=result.get("research_data", []),
-        raw_findings=result.get("raw_findings", []),
-        recommended_indices=result.get("recommended_indices", []),
-        thread_id=thread_id
-    )
+        status="waiting_selection" if is_interrupted else "completed",  # pyre-ignore
+        draft=str(result.get("draft", "")),  # pyre-ignore
+        draft_html=str(result.get("draft_html", "")),  # pyre-ignore
+        strategy_guide=str(result.get("strategy_guide", "")),  # pyre-ignore
+        errors=result.get("errors", []),  # pyre-ignore
+        research_data=result.get("research_data", []),  # pyre-ignore
+        raw_findings=result.get("raw_findings", []),  # pyre-ignore
+        recommended_indices=result.get("recommended_indices", []),  # pyre-ignore
+        thread_id=thread_id  # pyre-ignore
+    )  # type: ignore
 
 @app.post("/api/v1/generate/async")
 async def generate_document_async(request: GenerateRequest, background_tasks: BackgroundTasks):
@@ -265,7 +267,7 @@ async def fast_chat_endpoint(request: ChatRequest):
         # MEJORA RADICAL: Eliminamos el nombre del comité de la búsqueda.
         # El comité (ej: Asamblea General) contamina el RAG con artículos procedimentales.
         # Solo usamos el tópico y el mensaje específico.
-        if len(last_user_msg.split()) > 4:
+        if len(str(last_user_msg).split()) > 4:
             search_query = f"{request.topic} {last_user_msg}"
         else:
             search_query = f"{request.topic} {last_user_msg}"
@@ -273,7 +275,7 @@ async def fast_chat_endpoint(request: ChatRequest):
         # --- NUEVA CAPA: Deep Research (Opcional) ---
         deep_research_context = ""
         if request.deepResearch:
-            from nodes.research_nodes import research_planner_node, research_executor_node, research_synthesizer_node
+            from nodes.research_nodes import research_planner_node, research_executor_node, research_synthesizer_node  # type: ignore
             logfire.info("Ejecutando Deep Research para el Chat...")
             
             # Simulamos el paso por el grafo para esta consulta específica
@@ -300,7 +302,7 @@ async def fast_chat_endpoint(request: ChatRequest):
         # FILTRO CRÍTICO: Si hay notebookId, el RAG solo se activa si hay palabras clave MUY específicas
         # de tratados internacionales para evitar "artículos random" de la ONU
         un_trigger_keywords = ["carta onu", "naciones unidas", "resolución un", "declaración universal", "ginebra"]
-        is_explicit_un_query = any(kw in last_user_msg.lower() for kw in un_trigger_keywords)
+        is_explicit_un_query = any(kw in str(last_user_msg).lower() for kw in un_trigger_keywords)
         
         if request.notebookId and not is_explicit_un_query:
             raw_articles = [] # Limpiamos el RAG si estamos en modo Notebook y no es query ONU
@@ -364,16 +366,16 @@ async def fast_chat_endpoint(request: ChatRequest):
                         # Si ya tenemos 2 de un mismo tratado (ej: Carta), buscamos otros
                         treaty_count = sum(1 for x in unique_cited if x.treaty == a["treaty"])
                         if treaty_count < 2 or len(seen_treaties) > 3:
-                            unique_cited.append(CitedArticle(treaty=a["treaty"], article_id=str(a["id"]), text=a["text"]))
+                            unique_cited.append(CitedArticle(treaty=a["treaty"], article_id=str(a["id"]), text=a["text"]))  # type: ignore
                             seen_treaties.add(a["treaty"])
                         if len(unique_cited) >= 4: break
                     cited = unique_cited
                 
                 return ChatResponse(
-                    response=nlm_result["answer"],
-                    cited_articles=cited,
-                    notebook_citations=notebook_citations
-                )
+                    response=nlm_result["answer"],  # pyre-ignore
+                    cited_articles=cited,  # pyre-ignore
+                    notebook_citations=notebook_citations  # pyre-ignore
+                )  # type: ignore
             except Exception as e:
                 logfire.warning(f"Direct NotebookLM Query failed, falling back to RAG: {e}")
 
@@ -395,7 +397,7 @@ Cita los tratados oficiales solo si son estrictamente relevantes para responder 
             for a in raw_articles:
                 treaty_count = sum(1 for x in cited if x.treaty == a["treaty"])
                 if treaty_count < 2:
-                    cited.append(CitedArticle(treaty=a["treaty"], article_id=str(a["id"]), text=a["text"]))
+                    cited.append(CitedArticle(treaty=a["treaty"], article_id=str(a["id"]), text=a["text"]))  # type: ignore
                 if len(cited) >= 5: break
         # ELIMINADO: Ya no enviamos artículos por defecto si no se piden
         
@@ -516,7 +518,7 @@ async def get_job_status(job_id: str):
 @app.get("/api/v1/jobs/{job_id}/download")
 async def download_job_result(job_id: str):
     """Descarga el PDF resultante de un job completado."""
-    from services.semantic_cache import semantic_cache
+    from services.semantic_cache import semantic_cache  # type: ignore
     path = semantic_cache.client.get(f"job:{job_id}:path")
     
     if not path or not os.path.exists(path):
@@ -555,7 +557,7 @@ async def _bg_compile_task(job_id: str, latex_code: str):
         if os.path.exists(pdf_path):
             job_store.update_status(job_id, "completed")
             # Para el PDF, persistimos el path en una sub-llave de redis específicamente
-            from services.semantic_cache import semantic_cache
+            from services.semantic_cache import semantic_cache  # type: ignore
             semantic_cache.client.setex(f"job:{job_id}:path", 3600, pdf_path)
         else:
             job_store.update_status(job_id, "failed", error="pdflatex failing to generate PDF")
@@ -802,6 +804,658 @@ async def _do_compile(latex_code: str):
         # In a real app, we'd use a BackgroundTask to clean up
         pass
 
+
+@app.get("/api/v1/relations")
+async def get_international_relations(country: str = "NOR"):
+    """Devuelve un grafo de relaciones internacionales para un país dado."""
+    # Mock data para visualización impactante (react-force-graph-3d)
+    
+    nodes = [
+        {"id": "NOR", "name": "Noruega", "group": 1, "val": 20},
+        {"id": "SWE", "name": "Suecia", "group": 1, "val": 15},
+        {"id": "FIN", "name": "Finlandia", "group": 1, "val": 15},
+        {"id": "DNK", "name": "Dinamarca", "group": 1, "val": 15},
+        {"id": "ISL", "name": "Islandia", "group": 1, "val": 10},
+        {"id": "USA", "name": "Estados Unidos", "group": 2, "val": 25},
+        {"id": "GBR", "name": "Reino Unido", "group": 2, "val": 20},
+        {"id": "RUS", "name": "Unión Soviética", "group": 3, "val": 25},
+        {"id": "CHN", "name": "China", "group": 3, "val": 20},
+        {"id": "FRA", "name": "Francia", "group": 4, "val": 18},
+        {"id": "DEU", "name": "Alemania", "group": 4, "val": 18},
+        {"id": "BRA", "name": "Brasil", "group": 5, "val": 12},
+        {"id": "ZAF", "name": "Sudáfrica", "group": 6, "val": 10},
+    ]
+    
+    links = [
+        {"source": "NOR", "target": "SWE", "type": "alliance", "color": "#00ff00"},
+        {"source": "NOR", "target": "FIN", "type": "alliance", "color": "#00ff00"},
+        {"source": "NOR", "target": "DNK", "type": "alliance", "color": "#00ff00"},
+        {"source": "NOR", "target": "ISL", "type": "alliance", "color": "#00ff00"},
+        {"source": "NOR", "target": "USA", "type": "treaty", "color": "#0088ff"},
+        {"source": "NOR", "target": "GBR", "type": "treaty", "color": "#0088ff"},
+        {"source": "USA", "target": "GBR", "type": "alliance", "color": "#00ff00"},
+        {"source": "USA", "target": "RUS", "type": "tension", "color": "#ff0000"},
+        {"source": "NOR", "target": "RUS", "type": "tension", "color": "#ffaa00"},
+        {"source": "RUS", "target": "CHN", "type": "alliance", "color": "#00ff00"},
+        {"source": "FRA", "target": "DEU", "type": "alliance", "color": "#00ff00"},
+        {"source": "USA", "target": "FRA", "type": "treaty", "color": "#0088ff"},
+        {"source": "NOR", "target": "DEU", "type": "trade", "color": "#aaaaaa"},
+        {"source": "NOR", "target": "FRA", "type": "trade", "color": "#aaaaaa"},
+        {"source": "NOR", "target": "BRA", "type": "trade", "color": "#aaaaaa"},
+        {"source": "NOR", "target": "ZAF", "type": "diplomatic", "color": "#ffffff"},
+        {"source": "SWE", "target": "FIN", "type": "alliance", "color": "#00ff00"},
+    ]
+    
+    return {"nodes": nodes, "links": links}
+
+@app.get("/api/v1/relations/html")
+async def get_international_relations_html():
+    # pyre-ignore[21]
+    from fastapi.responses import HTMLResponse
+    # pyre-ignore[21]
+    from generate_map import generate_interactive_map
+    
+    html_path = os.path.join(os.path.dirname(__file__), "intelmap_noruega.html")
+    
+    # Check if we generated it already, else we could generate it on the fly
+    if not os.path.exists(html_path):
+        generate_interactive_map()
+        
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+        
+    # We strip out inline styles on body if any to let it fill the iframe cleanly
+    html_content = html_content.replace('margin:0;', 'margin:0; overflow:hidden;')
+    
+    return HTMLResponse(content=html_content)
+
+
+# ═══════════════════════════════════════════════════════════════
+# DEEP RESEARCH ENDPOINT — Fuentes en tiempo real
+# ═══════════════════════════════════════════════════════════════
+from urllib.parse import urlparse
+
+# Mapeo de dominios a categorías y logos
+DOMAIN_CATEGORIES = {
+    "un.org": ("ONU", "🇺🇳", "legal"),
+    "ohchr.org": ("OHCHR", "🇺🇳", "legal"),
+    "icj-cij.org": ("Corte Internacional", "⚖️", "legal"),
+    "amnesty.org": ("Amnistía Internacional", "🕯️", "ong"),
+    "hrw.org": ("Human Rights Watch", "👁️", "ong"),
+    "icrc.org": ("Cruz Roja Internacional", "🏥", "ong"),
+    "reuters.com": ("Reuters", "📰", "periodismo"),
+    "bbc.com": ("BBC", "📺", "periodismo"),
+    "bbc.co.uk": ("BBC", "📺", "periodismo"),
+    "aljazeera.com": ("Al Jazeera", "📡", "periodismo"),
+    "theguardian.com": ("The Guardian", "📰", "periodismo"),
+    "foreignaffairs.com": ("Foreign Affairs", "🌐", "think_tank"),
+    "sipri.org": ("SIPRI", "🔬", "think_tank"),
+    "brookings.edu": ("Brookings", "🏛️", "think_tank"),
+    "worldbank.org": ("World Bank", "💰", "datos"),
+    "scholar.google.com": ("Google Scholar", "📚", "academico"),
+    "jstor.org": ("JSTOR", "📖", "academico"),
+    "europa.eu": ("Unión Europea", "🇪🇺", "legal"),
+    "oas.org": ("OEA", "🌎", "legal"),
+}
+
+def _classify_source(url: str):
+    """Clasifica una URL en categoría, nombre y emoji."""
+    try:
+        domain = urlparse(url).netloc.replace("www.", "")
+        for known_domain, (name, emoji, category) in DOMAIN_CATEGORIES.items():
+            if known_domain in domain:
+                return {"name": name, "emoji": emoji, "category": category, "domain": domain}
+        # Dominio desconocido
+        short = domain.split(".")[-2] if "." in domain else domain
+        return {"name": short.capitalize(), "emoji": "🔗", "category": "web", "domain": domain}
+    except Exception:
+        return {"name": "Fuente", "emoji": "🔗", "category": "web", "domain": "unknown"}
+
+
+@app.post("/api/v1/deep-research")
+async def deep_research_search(body: dict):
+    """Ejecuta una ronda de investigación profunda generando queries dinámicamente con LLM."""
+    topic = body.get("topic", "human rights")
+    country = body.get("country", "Norway")
+    custom_context = body.get("context", "")
+    round_num = body.get("round", 1)
+
+    # pyre-ignore[21]
+    from services.llm import fast_llm, tavily
+    # pyre-ignore[21]
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    # Bucle de reintentos para asegurar que encontramos fuentes
+    max_attempts = 3
+    sources = []
+    queries = []
+    seen_urls = set()
+
+    async def search_one(q):
+        try:
+            res = await asyncio.to_thread(
+                tavily.search, query=q, search_depth="advanced", max_results=5
+            )
+            return res.get("results", [])
+        except Exception as e:
+            print(f"Error en Tavily para '{q}': {e}")
+            return []
+
+    for attempt in range(1, max_attempts + 1):
+        # Modificar el prompt si estamos reintentando
+        retry_context = ""
+        if attempt > 1:
+            retry_context = f"\n⚠️ ATENCIÓN: Esta es la iteración de búsqueda #{attempt}. La búsqueda anterior NO devolvió resultados. USA TÉRMINOS MUCHO MÁS AMPLIOS, DIFERENTES Y MENOS RESTRICTIVOS."
+
+        # El LLM genera las queries obedeciendo el contexto estricto
+        prompt = f"""Eres un investigador geopolítico de élite para el Modelo de Naciones Unidas.
+Tu objetivo es generar EXACTAMENTE 4 consultas de búsqueda en INGLÉS para investigar este caso.
+
+País: {country}
+Tema: {topic}
+
+REGLAS Y CONTEXTO HISTÓRICO (ESTRICTAMENTE OBLIGATORIO):
+{custom_context if custom_context else "Ninguna regla específica. Búsqueda moderna."}{retry_context}
+
+Ronda actual: {round_num} de 3.
+Ronda 1: Búsqueda legal y general (postura en la ONU, tratados).
+Ronda 2: Contexto geopolítico y lagunas (alianzas, tensiones).
+Ronda 3: Búsqueda profunda (detalles, papers, estadísticas históricas).
+
+Genera consultas ultra-optimizadas compatibles con motores de búsqueda.
+Responde ÚNICAMENTE con un array JSON de 4 strings.
+Ejemplo: ["Norway UN Security Council statement 1989", "Norwegian foreign policy Cold War"]
+        """
+
+        try:
+            response = await fast_llm.ainvoke([
+                SystemMessage(content="Eres un generador de queries de alta precisión. Responde SOLO en JSON."),
+                HumanMessage(content=prompt)
+            ])
+            content_str = str(getattr(response, "content", "[]"))
+            json_match = re.search(r'\[.*\]', content_str, re.DOTALL)
+            if json_match:
+                content_str = json_match.group(0)
+                
+            queries = json.loads(content_str)
+            if not isinstance(queries, list):
+                queries = [f"{country} {topic} UN position"]
+        except Exception as e:
+            print(f"Error generando queries: {e}")
+            queries = [
+                f"{country} {topic} official position",
+                f"{country} {topic} international response",
+                f"{country} UN Security council {topic}",
+            ]
+
+        # pyre-ignore
+        batches = await asyncio.gather(*[search_one(q) for q in queries[:4]])
+
+        for batch in batches:
+            if not isinstance(batch, list):
+                continue
+            for result in batch:
+                url = result.get("url", "")
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+
+                classification = _classify_source(url)
+                sources.append({
+                    "url": url,
+                    "title": result.get("title", "Sin título"),
+                    "snippet": result.get("content", "")[:250],
+                    "full_text": result.get("content", ""),  # Texto completo para búsqueda profunda
+                    "domain": classification["domain"],
+                    "source_name": classification["name"],
+                    "emoji": classification["emoji"],
+                    "category": classification["category"],
+                })
+
+        # Si encontramos fuentes, rompemos el bucle y avanzamos
+        if len(sources) > 0:
+            break
+
+
+    return {
+        "round": round_num,
+        "query_count": len(queries),
+        "source_count": len(sources),
+        "generated_queries": queries,
+        "sources": sources,
+    }
+
+# ═══════════════════════════════════════════════════════════════
+# DRAFTING TERMINAL AGENT ENDPOINT (OPEN CLAW / DEV AGENT MODE)
+# ═══════════════════════════════════════════════════════════════
+@app.post("/api/v1/agent/drafting-terminal")
+async def drafting_terminal_agent(body: dict):
+    """Agente Autónomo de fases: 1) Prompt Engineering 2) Deep Research Trigger 3) Drafting."""
+    question = str(body.get("question") or "")
+    doc_context = str(body.get("document_context") or "")
+    history = body.get("history", [])
+
+    # pyre-ignore[21]
+    from services.llm import scribe_llm
+    # pyre-ignore[21]
+    from langchain_core.messages import SystemMessage, HumanMessage, AIMessage  # type: ignore
+    from datetime import datetime
+    
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    current_year = current_date[:4]  # type: ignore[index]
+    
+    sys_prompt = f"""Eres el 'MUNify Autonomous Terminal Agent'. Tu misión es asistir en la creación impecable de documentos diplomáticos.
+[DIRECTIVA DE ROL - AÑO 2026]: Estamos en una simulación inmersiva donde el AÑO ACTUAL ES {current_year}. Actúa, analiza y recomienda EXACTAMENTE como si estuviéramos en {current_year}. NUNCA rompas el personaje mencionando tu fecha de entrenamiento o el año 2024. Tu herramienta de búsqueda web (FASE 2) tiene acceso en tiempo real a los eventos actuales. Si el usuario pide datos de {current_year}, asúmelos como eventos del PRESENTE.
+TIENES 4 FASES DE TRABAJO (No te saltes la Fase 1):
+FASE 1 - Refinamiento de Prompt: Si el usuario pide investigar un tema, NO busques de inmediato. Hazle preguntas iterativas para construir el "Prompt Perfecto" (¿Qué país representa? ¿Cuál es el límite temporal exacto?, ¿Se enfoca en economía, seguridad o derechos humanos?). Sigue charlando hasta que el usuario confirme el enfoque.
+FASE 2 - Activación Mixta (Notebook + Web): Una vez el usuario aprueba el enfoque y si el usuario tiene un contexto documental establecido (indicado en el prompt), tu acción será 'trigger_mixed_research'. Si solo es investigación libre sin cuaderno, tu acción es 'trigger_research'.
+FASE 3 - Análisis y Redacción: Cuando ya tengas en el historial la inyección del texto investigado, discute con el usuario qué ideas filtrar. Cuando decida que quieres redactar, tu acción será 'draft' e incluirás el HTML en "draft_html".
+
+Contexto actual de la hoja:
+{doc_context[:30000]}...  # type: ignore[index]
+
+RESPONDE **ÚNICAMENTE** EN ESTE FORMATO JSON ESTRICTO, sin usar comentarios tipo //, sin backticks ni texto adicional fuera de las llaves:
+{{
+  "reply": "Tu respuesta conversacional para el usuario (la pregunta de refinamiento o el análisis).",
+  "action": "chat",
+  "research_topic": "El tema ultra-específico si action es trigger_research o trigger_mixed_research",
+  "research_context": "El contexto u orientación particular para guiar la búsqueda profunda",
+  "draft_html": "<p>Tercera persona o texto mejorado</p>"
+}}
+Nota para la clavel 'action': los valores válidos son SOLAMENTE "chat", "trigger_research", "trigger_mixed_research", o "draft".
+"""
+    messages = [SystemMessage(content=sys_prompt)]
+    
+    for msg in history:
+        if msg.get("role") == "user": messages.append(HumanMessage(content=msg.get("content", "")))
+        else: messages.append(AIMessage(content=msg.get("content", "")))
+            
+    messages.append(HumanMessage(content=question))
+    
+    try:
+        response = await scribe_llm.ainvoke(messages)
+        content = str(getattr(response, "content", "{}")).strip()
+        
+        # Super-robust extraction using regex to find the first '{' and last '}'
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(0)
+            
+        parsed = json.loads(content)
+        
+        return {
+            "answer": parsed.get("reply", "Procesado."),
+            "action": parsed.get("action", "chat"),
+            "research_topic": parsed.get("research_topic", ""),
+            "research_context": parsed.get("research_context", ""),
+            "new_draft": parsed.get("draft_html", "")
+        }
+        
+    except Exception as e:
+        print("Agent Terminal Error:", e, "\nContent was:", getattr(response, "content", "None"))
+        return {"answer": "Error interno al decodificar la instrucción IA (formato JSON corrupto). Por favor, repite la solicitud.", "action": "chat"}
+# ═══════════════════════════════════════════════════════════════
+# BLOC / ALLIANCE MANAGEMENT (In-Memory for LAN Demo)
+# ═══════════════════════════════════════════════════════════════
+blocs_store: Dict[str, dict] = {}
+
+class CreateBlocRequest(BaseModel):
+    name: str
+    committee_id: str
+    creator_country: str
+
+@app.post("/api/v1/blocs")
+async def create_bloc(request: CreateBlocRequest):
+    """Crea un nuevo bloc/alianza para co-edición colaborativa."""
+    bloc_id = f"bloc_{uuid.uuid4().hex[:8]}"  # type: ignore[index]
+    room_slug = request.name.lower().replace(" ", "_").replace("'", "")
+    blocs_store[bloc_id] = {
+        "id": bloc_id,
+        "name": request.name,
+        "committee_id": request.committee_id,
+        "members": [request.creator_country],
+        "created_by": request.creator_country,
+        "room_name": f"bloc_{room_slug}_{request.committee_id}",
+        "chat": [],
+    }
+    logfire.info(f"Bloc created: {request.name} by {request.creator_country}")
+    return blocs_store[bloc_id]
+
+@app.get("/api/v1/blocs/{committee_id}")
+async def list_committee_blocs(committee_id: str):
+    """Lista todos los blocs activos en un comité."""
+    return {"blocs": [b for b in blocs_store.values() if b["committee_id"] == committee_id]}
+
+@app.post("/api/v1/blocs/{bloc_id}/join")
+async def join_bloc(bloc_id: str, body: dict):
+    """Un país se une a un bloc existente."""
+    if bloc_id not in blocs_store:
+        raise HTTPException(404, "Bloc no encontrado")
+    country = body.get("country", "Desconocido")
+    if country not in blocs_store[bloc_id]["members"]:
+        blocs_store[bloc_id]["members"].append(country)
+    return blocs_store[bloc_id]
+
+@app.post("/api/v1/blocs/{bloc_id}/leave")
+async def leave_bloc(bloc_id: str, body: dict):
+    """Un país abandona un bloc. Si queda vacío, se disuelve."""
+    if bloc_id not in blocs_store:
+        raise HTTPException(404, "Bloc no encontrado")
+    country = body.get("country", "Desconocido")
+    blocs_store[bloc_id]["members"] = [m for m in blocs_store[bloc_id]["members"] if m != country]
+    if not blocs_store[bloc_id]["members"]:
+        del blocs_store[bloc_id]  # type: ignore[arg-type]
+        return {"status": "dissolved", "message": f"Bloc disuelto por ausencia de miembros."}
+    return blocs_store[bloc_id]
+
+@app.post("/api/v1/blocs/{bloc_id}/chat")
+async def bloc_chat_message(bloc_id: str, body: dict):
+    """Envía un mensaje al chat del bloc."""
+    if bloc_id not in blocs_store:
+        raise HTTPException(404, "Bloc no encontrado")
+    msg = {
+        "country": body.get("country", "Anón"),
+        "text": body.get("text", ""),
+        "timestamp": str(asyncio.get_event_loop().time()),
+    }
+    blocs_store[bloc_id]["chat"].append(msg)
+    # Mantener solo los últimos 100 mensajes
+    blocs_store[bloc_id]["chat"] = blocs_store[bloc_id]["chat"][-100:]
+    return {"status": "sent", "chat": blocs_store[bloc_id]["chat"]}
+
+@app.get("/api/v1/blocs/{bloc_id}/chat")
+async def get_bloc_chat(bloc_id: str):
+    """Obtiene el historial de chat del bloc."""
+    if bloc_id not in blocs_store:
+        raise HTTPException(404, "Bloc no encontrado")
+    return {"chat": blocs_store[bloc_id]["chat"], "members": blocs_store[bloc_id]["members"]}
+
+
+# ═══════════════════════════════════════════════════════════════
+# ARGUMENT GENERATOR (Pros & Cons Analysis)
+# ═══════════════════════════════════════════════════════════════
+class ArgumentRequest(BaseModel):
+    topic: str
+    country: str
+    committee: str
+    parameters: Optional[List[str]] = None
+    source_context: Optional[str] = None
+
+@app.post("/api/v1/chat/arguments")
+async def generate_arguments(request: ArgumentRequest):
+    """Genera argumentos estructurados A FAVOR y EN CONTRA, alimentados por la Cola de Prioridad."""
+    from services.llm import fast_llm  # pyre-ignore
+    from langchain_core.messages import SystemMessage, HumanMessage  # pyre-ignore
+
+    params_text = ""
+    if request.parameters:
+        params_text = "Fuentes de investigación recopiladas (Cola de Prioridad):\n" + "\n".join(f"- {p}" for p in request.parameters)  # type: ignore[arg-type]
+
+    source_block = ""
+    if request.source_context:
+        src_text = request.source_context[:8000]  # type: ignore[index]
+        source_block = f"""
+EVIDENCIA RECOPILADA POR EL DELEGADO (OBLIGATORIO USAR COMO BASE):
+{src_text}
+
+REGLA CRÍTICA: Cada argumento DEBE referenciar al menos una de estas fuentes en su 'legal_basis'.
+Si una fuente no aplica, cita el tratado o resolución más cercana, pero PRIORIZA la evidencia del delegado.
+"""
+
+    prompt = f"""Eres un analista geopolítico de élite del Modelo de Naciones Unidas.
+Genera argumentos estructurados A FAVOR y EN CONTRA sobre el siguiente tema.
+
+País que representa: {request.country}
+Comité: {request.committee}
+Tema/Propuesta: {request.topic}
+{params_text}
+{source_block}
+INSTRUCCIONES:
+- Los argumentos A FAVOR deben ser desde la perspectiva de {request.country}.
+- Los argumentos EN CONTRA deben anticipar objeciones de países opositores.
+- Cada argumento DEBE citar fuentes de la evidencia recopilada cuando sea posible.
+
+RESPONDE ÚNICAMENTE en JSON puro (sin backticks, sin markdown):
+{{
+  "arguments_for": [
+    {{"point": "Título conciso", "detail": "Explicación en 2-3 oraciones citando fuentes", "legal_basis": "Fuente específica de la evidencia o tratado relevante", "strength": "alta|media|baja"}}
+  ],
+  "arguments_against": [
+    {{"point": "Título conciso", "detail": "Explicación en 2-3 oraciones citando fuentes", "legal_basis": "Fuente específica de la evidencia o tratado relevante", "strength": "alta|media|baja"}}
+  ]
+}}
+Genera exactamente 4 argumentos a favor y 4 en contra."""
+
+    try:
+        response = await fast_llm.ainvoke([
+            SystemMessage(content="Genera JSON puro sin markdown ni backticks."),
+            HumanMessage(content=prompt)
+        ])
+
+        content = str(getattr(response, "content", "{}"))
+        import re
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(0)
+
+        parsed = json.loads(content)
+        return {"topic": request.topic, "country": request.country, **parsed}
+    except Exception as e:
+        logfire.error(f"Argument Generator Error: {e}")
+        return {"topic": request.topic, "country": request.country, "arguments_for": [], "arguments_against": [], "error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════════
+# USER FEEDBACK STORE (In-Memory, per committee)
+# ═══════════════════════════════════════════════════════════════
+# Stores the last N user feedback actions per committee session
+feedback_store: Dict[str, list] = {}  # committee_id -> [{action, domain, title, keywords, ts}]
+
+class QueueFeedbackRequest(BaseModel):
+    committee_id: str
+    action: str  # 'inject' | 'delete' | 'promote'
+    source: dict  # {title, domain, snippet, url}
+
+@app.post("/api/v1/queue/feedback")
+async def record_queue_feedback(request: QueueFeedbackRequest):
+    """Registra una acción explícita del usuario sobre la cola para retroalimentación."""
+    cid = request.committee_id
+    if cid not in feedback_store:
+        feedback_store[cid] = []
+
+    # Extraer keywords simples del snippet para matching futuro
+    snippet_words = set(request.source.get("snippet", "").lower().split())
+    # Filtrar stopwords cortas
+    keywords = [w for w in snippet_words if len(w) > 4][:10]  # type: ignore[index]
+
+    entry = {
+        "action": request.action,
+        "domain": request.source.get("domain", "unknown"),
+        "title": request.source.get("title", ""),
+        "keywords": keywords,
+        "ts": str(asyncio.get_event_loop().time()),
+    }
+    feedback_store[cid].append(entry)
+    # Mantener solo los últimos 50 eventos por comité
+    feedback_store[cid] = feedback_store[cid][-50:]  # type: ignore[index]
+
+    logfire.info(f"Queue feedback recorded: {request.action} on {entry['domain']} for {cid}")
+    return {"status": "recorded", "total_feedback": len(feedback_store[cid])}
+
+# ═══════════════════════════════════════════════════════════════
+# AUTONOMOUS QUEUE REFINER (Background Loop Agent) — v2 Algorithmic
+# ═══════════════════════════════════════════════════════════════
+class QueueRefineRequest(BaseModel):
+    sources: List[dict]
+    committee_id: str
+    document_context: Optional[str] = None
+    engineering_context: Optional[str] = None  # Content from .md files (Context Engineering)
+    notebook_ids: Optional[List[str]] = None   # All connected notebooks for cross-ref
+    weights: Optional[Dict[str, float]] = None  # Dynamic weight overrides from user answers
+
+@app.post("/api/v1/queue/refine")
+async def refine_queue(request: QueueRefineRequest):
+    """Agente autónomo v2: Combina algoritmo de scoring matemático + LLM para gap analysis."""
+    if not request.sources:
+        return {"refined_sources": [], "actions_taken": [], "gaps": [], "questions": []}
+
+    from services.queue_scoring import (  # type: ignore
+        compute_utility_scores,
+        detect_uncertainty_questions,
+    )
+
+    # === 1. Build context text from engineering .md + document ===
+    context_parts = []
+    if request.engineering_context:
+        context_parts.append(request.engineering_context[:5000])  # type: ignore[index]
+    if request.document_context:
+        context_parts.append(request.document_context[:3000])  # type: ignore[index]
+    full_context = "\n".join(context_parts)
+
+    # === 2. Gather feedback history for this committee ===
+    cid = request.committee_id
+    fb_history = feedback_store.get(str(cid), [])
+
+    # === 3. Compute algorithmic utility scores ===
+    utility_scores, breakdown = compute_utility_scores(
+        sources=request.sources,
+        context_text=full_context,
+        feedback_history=fb_history,
+        weights=request.weights,
+    )
+
+    # === 4. Use LLM only for gap analysis (what's missing) ===
+    gaps: List[str] = []
+    quality_scores: List[float] = []
+    try:
+        sources_subset = request.sources[:15]  # type: ignore
+        sources_summary = "\n".join(
+            f"[{i+1}] {s.get('title','?')} ({s.get('domain','?')})"
+            for i, s in enumerate(sources_subset)
+        )
+        doc_hint = full_context[:1500] if full_context else "Sin contexto adicional."  # type: ignore[index]
+        
+        gap_prompt = f"""Analiza estas fuentes e identifica qué temas FALTAN.
+FUENTES: {sources_summary}
+CONTEXTO: {doc_hint}
+Responde SOLO en JSON: {{"gaps": ["tema faltante 1", "tema faltante 2"], "quality_scores": [1-10 por fuente]}}"""
+        
+        gap_response = await fast_llm.ainvoke([
+            SystemMessage(content="JSON puro sin backticks."),
+            HumanMessage(content=gap_prompt)
+        ])
+        gap_content = str(getattr(gap_response, "content", "{}"))
+        gap_match = re.search(r'\{.*\}', gap_content, re.DOTALL)
+        if gap_match:
+            gap_parsed = json.loads(gap_match.group(0))
+            gaps = gap_parsed.get("gaps", [])[:5]
+            quality_scores = gap_parsed.get("quality_scores", [])
+    except Exception as e:
+        logfire.warning(f"LLM gap analysis failed (non-critical): {e}")
+
+    # === 5. Sort sources by utility score (descending) ===
+    indexed = list(enumerate(utility_scores))
+    indexed.sort(key=lambda x: x[1], reverse=True)
+    
+    refined = [request.sources[i] for i, _ in indexed if i < len(request.sources)]
+    sorted_scores = [s for _, s in indexed]
+
+    # === 6. Generate Active Learning questions ===
+    context_sim = breakdown.get("context_similarity", [])
+    llm_quality = quality_scores if len(quality_scores) == len(request.sources) else [5.0] * len(request.sources)
+    questions = detect_uncertainty_questions(
+        sources=request.sources,
+        context_similarity=context_sim,
+        quality_scores=llm_quality,
+        gaps=gaps,
+    )
+
+    # === 7. Build actions summary ===
+    actions = []
+    original_order = list(range(len(request.sources)))
+    new_order = [i for i, _ in indexed]
+    if new_order != original_order:
+        actions.append(f"Re-rankeadas {len(refined)} fuentes por utilidad algorítmica (α={breakdown.get('context_similarity', ['?'])[0]:.2f}...)")
+    if questions:
+        actions.append(f"Generadas {len(questions)} preguntas de refinamiento activo")
+    if gaps:
+        actions.append(f"Detectados {len(gaps)} gaps temáticos")
+
+    return {
+        "refined_sources": refined,
+        "actions_taken": actions,
+        "gaps": gaps,
+        "questions": questions,
+        "utility_scores": sorted_scores,
+        "breakdown": breakdown,
+        "summary": f"Cola optimizada algorítmicamente. Top score: {max(sorted_scores) if sorted_scores else 0:.3f}",
+    }
+
+
+@app.post("/api/v1/notebook-analyze")
+async def analyze_notebook(body: dict):
+    """Consulta al NotebookLM para extraer 4 extractos clave sobre un tema específico, devuelto como fuentes."""
+    notebook_id = body.get("notebook_id")
+    topic = body.get("topic", "")
+    context = body.get("context", "")
+    
+    if not notebook_id:
+        raise HTTPException(status_code=400, detail="notebook_id is required")
+        
+    prompt = f"""Eres un extractor de evidencia documental riguroso.
+El delegado está investigando el tema específico: '{topic}'.
+Contexto u orientación adicional: '{context}'.
+
+Tu tarea: Revisa exhaustivamente los documentos de este cuaderno y extrae EXACTAMENTE 4 citas textuales o ideas fundamentales que respondan a este tema.
+
+REGLAS:
+1. Debes proporcionar citas reales basadas en los documentos subidos.
+2. Formatea tu respuesta ÚNICAMENTE como un JSON array válido.
+3. El formato de cada objeto debe ser:
+[
+  {{
+    "title": "Breve título de la idea (max 6 palabras)",
+    "snippet": "El extracto detallado o la idea fundamental extraída del documento.",
+    "source_name": "Nombre real del documento original",
+    "page": "Número de página si aplica, o null"
+  }}
+]
+NO incluyas texto fuera del JSON.
+"""
+    try:
+        logfire.info(f"Ejecutando NotebookLM Analysis para el tema: {topic}")
+        # Usamos el notebook_service ya existente en api.py
+        result = await notebook_service.query_notebook(notebook_id, prompt)
+        
+        content = str(result.get("answer", "[]"))
+        
+        json_match = re.search(r'\[.*\]', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(0)
+            
+        parsed_quotes = json.loads(content)
+        
+        sources = []
+        for q in parsed_quotes:
+            sources.append({
+                "url": "notebook://local",  # Identificador especial para frontend
+                "title": q.get("title", "Extracto de Documento"),
+                "snippet": q.get("snippet", ""),
+                "domain": "NotebookLM",
+                "source_name": q.get("source_name", "Documento Interno"),
+                "emoji": "📓",
+                "category": "notebook",
+            })
+            
+        return {
+            "status": "success",
+            "source_count": len(sources),
+            "sources": sources
+        }
+        
+    except Exception as e:
+        logfire.error(f"Error en Notebook Analysis: {e}")
+        return {"status": "error", "sources": [], "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn  # pyre-ignore

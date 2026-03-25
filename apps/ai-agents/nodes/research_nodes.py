@@ -1,177 +1,282 @@
 # pyre-ignore-all-errors
+"""
+Deep Research Engine v2 — Proceso Iterativo con Pila de Conocimiento.
+
+Flujo: researcher → scraper → evaluator → (loop | synthesizer)
+Cada ronda apila conocimiento en knowledge_stack.
+Los archivos .md en prompts/ definen el comportamiento de cada nodo.
+"""
+import json
+import asyncio
+from pathlib import Path
+
 import logfire
 from langchain_core.messages import HumanMessage, SystemMessage
-from domain.state import AgentState
-from services.llm import tavily, fast_llm, critic_llm
-import json
 
-# 1. PLANNER: Genera sub-consultas de investigación
-@logfire.instrument("Research Planner Node")
-async def research_planner_node(state: AgentState):
-    topic = state['topic']
-    country = state['country']
-    
-    # MODO ESTÁNDAR: Evita el loop pesado si el usuario no activó Deep Research
+from domain.state import AgentState
+from services.llm import tavily, fast_llm
+from services.deep_crawler import crawler
+
+# ─── Utilidad: Leer archivos de instrucciones .md ───
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
+def _load_prompt(name: str) -> str:
+    """Lee un archivo .md de instrucciones desde prompts/."""
+    path = PROMPTS_DIR / name
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return f"(Archivo {name} no encontrado)"
+
+
+# ═══════════════════════════════════════════════════════════════
+# 1. RESEARCHER: Genera queries y busca con Tavily
+# ═══════════════════════════════════════════════════════════════
+@logfire.instrument("Deep Researcher Node")
+async def researcher_node(state: AgentState):
+    topic = state["topic"]
+    country = state["country"]
+    depth = state.get("research_depth", 0)
+    stack = state.get("knowledge_stack", [])
+
+    # Modo estándar (sin deep research)
     if not state.get("deep_research"):
-        print("[OK] Modo investigación estándar seleccionado.")
         return {
             "research_queries": [f"recent geopolitical position of {country} on {topic}"],
-            "iteration_count": 0,
-            "research_data": [],
+            "research_depth": 0,
+            "knowledge_stack": [],
             "raw_findings": [],
-            "recommended_indices": [],
-            "selected_indices": []
+            "is_research_complete": False,
         }
 
-    print(f"--- PLANIFICANDO INVESTIGACIÓN PROFUNDA PARA: {topic} ---")
-    
-    prompt = f"""Como experto en investigación geopolítica del MUN, analiza el tema: "{topic}" para el país "{country}".
-    Genera una lista de 5 a 8 consultas de búsqueda específicas en INGLÉS que cubran:
-    1. Postura histórica oficial de {country} sobre {topic}.
-    2. Declaraciones recientes de líderes de {country} en la Asamblea General o foros internacionales.
-    3. Alianzas regionales y tratados firmados por {country} relacionados con el tema.
-    4. Críticas o controversias internacionales que involucren a {country} sobre este tema.
-    5. Datos estadísticos y económicos reales de {country} impactados por el tema.
+    print(f"--- [DEEP RESEARCH] Ronda {depth + 1} de investigación ---")
 
-    Responde ÚNICAMENTE con un array JSON de strings. Ejemplo: ["query 1", "query 2"]
-    """
-    
-    response = fast_llm.invoke([
-        SystemMessage(content="Eres un planificador de investigación diplomática. Respondes exclusivamente en formato JSON."),
-        HumanMessage(content=prompt)
+    # Leer instrucciones del archivo .md
+    instructions = _load_prompt("researcher.md")
+
+    # Contexto acumulado para que el LLM sepa qué ya tiene
+    stack_summary = ""
+    if stack:
+        stack_summary = (
+            f"\n\nYa tenemos {len(stack)} fragmentos de conocimiento. "
+            f"Resumen parcial:\n" + "\n".join(f"- {s[:120]}..." for s in stack[:5])
+        )
+
+    prompt = f"""{instructions}
+
+MISIÓN ACTUAL:
+- País: {country}
+- Tema: {topic}
+- Ronda: {depth + 1} de 3
+{stack_summary}
+
+Genera las consultas de búsqueda para esta ronda.
+"""
+
+    response = await fast_llm.ainvoke([
+        SystemMessage(content="Eres un investigador geopolítico de élite. Responde SOLO con un array JSON."),
+        HumanMessage(content=prompt),
     ])
-    
+
     try:
-        # Extraer JSON de la respuesta
-        text = response.content.replace('```json', '').replace('```', '').strip()
-        queries = json.loads(text)
-        print(f"[OK] Plan de investigación generado con {len(queries)} consultas.")
-        return {
-            "research_queries": queries,
-            "iteration_count": 0,
-            "research_data": [],
-            "raw_findings": [],
-            "recommended_indices": [],
-            "selected_indices": []
-        }
-    except Exception as e:
-        print(f"[ERROR] Fallo al parsear preguntas de investigación: {e}")
-        return {
-            "research_queries": [f"{country} official position on {topic}"],
-            "iteration_count": 0,
-            "research_data": []
-        }
+        content = str(getattr(response, "content", "[]"))
+        queries = json.loads(content.replace("```json", "").replace("```", "").strip())
+    except Exception:
+        queries = [f"{country} {topic} UN resolution", f"{country} {topic} treaty"]
 
-import asyncio
-
-# 2. EXECUTOR: Ejecuta las búsquedas en paralelo usando asyncio.gather
-@logfire.instrument("Research Executor Node")
-async def research_executor_node(state: AgentState):
-    print(f"--- EJECUTANDO INVESTIGACIÓN PARALELA (Iteración {state['iteration_count'] + 1}) ---")
-    
-    queries = state["research_queries"]
-    search_depth = "advanced" if state["iteration_count"] == 0 else "basic"
-    
-    async def fetch_results(q):
+    # Ejecutar búsquedas en paralelo con Tavily
+    async def search(q):
         try:
-            print(f"Buscando: {q}")
-            # Ejecutamos la búsqueda sincrónica en un hilo dedicado para paralelismo real
-            search_res = await asyncio.to_thread(
-                tavily.search, query=q, search_depth=search_depth, max_results=5
+            res = await asyncio.to_thread(
+                tavily.search, query=q, search_depth="advanced", max_results=6
             )
-            return [f"FUENTE: {r['url']}\nCONTENIDO: {r['content']}" for r in search_res['results']]
-        except Exception as e:
-            print(f"Error en búsqueda '{q}': {e}")
+            return res.get("results", [])
+        except Exception:
             return []
 
-    # Disparar todas las búsquedas simultáneamente
-    tasks = [fetch_results(q) for q in queries]
-    batch_results = await asyncio.gather(*tasks)
-    
-    # NUEVA LÓGICA: Almacenar resultados crudos con metadata
-    all_raw = []
-    for results in batch_results:
-        all_raw.extend(results)
-    
-    print(f"[OK] Se obtuvieron {len(all_raw)} fuentes totales. Listas para revisión.")
+    tasks = [search(q) for q in queries]
+    batches = await asyncio.gather(*tasks)
+
+    new_findings = []
+    for batch in batches:
+        if isinstance(batch, list):
+            new_findings.extend(batch)
+
+    # Acumular hallazgos
+    existing = list(state.get("raw_findings") or [])
+    existing.extend(new_findings)
+
+    print(f"[OK] Ronda {depth + 1}: +{len(new_findings)} fuentes ({len(existing)} total)")
     return {
-        "raw_findings": all_raw[:40],
-        "iteration_count": state["iteration_count"] + 1
+        "raw_findings": existing[:80],
+        "research_depth": depth + 1,
     }
 
-# 3. REVIEWER: Analiza los 35+ resultados y recomienda los mejores
-@logfire.instrument("Research Reviewer Node")
-async def research_reviewer_node(state: AgentState):
-    print("--- IA RECOMENDANDO LAS MEJORES FUENTES (AI Reranking) ---")
-    
-    findings = state["raw_findings"]
+
+# ═══════════════════════════════════════════════════════════════
+# 2. SCRAPER: crawl4ai en las mejores URLs → Markdown
+# ═══════════════════════════════════════════════════════════════
+@logfire.instrument("Deep Scraper Node")
+async def scraper_node(state: AgentState):
+    findings = state.get("raw_findings", [])
+    depth = state.get("research_depth", 1)
+
     if not findings:
-        return state
+        return {"knowledge_stack": state.get("knowledge_stack", [])}
 
-    # Construir un resumen mínimo de las fuentes para que el LLM las evalue
-    summaries = []
-    for i, f in enumerate(findings):
-        # Tomamos solo el inicio del contenido para ahorrar tokens
-        title = f.get('title', 'Sin título')
-        content_preview = f.get('content', '')[:200]
-        summaries.append(f"[{i}] {title}: {content_preview}...")
+    print(f"--- [DEEP SCRAPER] Ronda {depth}: scrapeando top fuentes ---")
 
-    prompt = f"""Como experto analista de la ONU, evalúa estas {len(summaries)} fuentes encontradas sobre '{state['topic']}' para {state['country']}.
-    Selecciona los índices de las 6 a 10 fuentes que sean:
-    1. Más autoritativas (Gobiernos, ONGs, Prensa internacional seria).
-    2. Más alineadas con la soberanía y postura de {state['country']}.
-    3. Más útiles para redactar un documento oficial de tipo {state.get('document_type', 'RESOLUTION')}.
-    
-    FUENTES:
-    {chr(10).join(summaries)}
-    
-    Responde ÚNICAMENTE con una lista JSON de los índices recomendados. Ejemplo: [0, 4, 12, 19]
-    """
-    
+    # Seleccionar las top-3 URLs que NO hayamos scrapeado aún
+    stack = list(state.get("knowledge_stack") or [])
+    already_scraped = {s.split("\n")[0] for s in stack if s.startswith("FUENTE:")}
+
+    urls_to_scrape = []
+    for f in findings:
+        url = f.get("url", "")
+        if url and url not in already_scraped and len(urls_to_scrape) < 3:
+            urls_to_scrape.append(url)
+
+    if not urls_to_scrape:
+        print("[SCRAPER] No hay URLs nuevas para scrapear.")
+        return {"knowledge_stack": stack}
+
+    # Scraping profundo con crawl4ai
+    contents = await crawler.crawl_many(urls_to_scrape)
+
+    for url, content in zip(urls_to_scrape, contents):
+        if content and len(content) > 100:
+            fragment = f"FUENTE: {url}\n{content[:4000]}"
+            stack.append(fragment)
+            print(f"  ✓ {url[:60]}... ({len(content)} chars)")
+        else:
+            print(f"  ✗ {url[:60]}... (sin contenido)")
+
+    # También apilar los snippets de Tavily que no se scrapearon
+    for f in findings[:10]:
+        snippet = f.get("content", "")
+        url = f.get("url", "")
+        if snippet and len(snippet) > 50:
+            mini = f"SNIPPET: {url}\n{snippet[:800]}"
+            if mini not in stack:
+                stack.append(mini)
+
+    print(f"[OK] Knowledge stack: {len(stack)} fragmentos acumulados")
+    return {"knowledge_stack": stack}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 3. EVALUATOR: ¿Es suficiente? ¿Necesitamos otra ronda?
+# ═══════════════════════════════════════════════════════════════
+@logfire.instrument("Deep Evaluator Node")
+async def evaluator_node(state: AgentState):
+    stack = state.get("knowledge_stack", [])
+    depth = state.get("research_depth", 0)
+
+    print(f"--- [EVALUATOR] Ronda {depth}: evaluando {len(stack)} fragmentos ---")
+
+    # Límite de seguridad
+    if depth >= 3 or not stack:
+        return {"is_research_complete": True}
+
+    instructions = _load_prompt("evaluator.md")
+
+    # Preparar resumen del stack para el LLM (no enviar todo, sería demasiado)
+    stack_preview = "\n---\n".join(s[:300] for s in stack[:8])
+
+    prompt = f"""{instructions}
+
+TEMA: {state['topic']}
+PAÍS: {state['country']}
+RONDA ACTUAL: {depth}
+FRAGMENTOS RECOLECTADOS: {len(stack)}
+
+PREVIEW DEL KNOWLEDGE STACK:
+{stack_preview}
+
+Evalúa la suficiencia y responde en JSON.
+"""
+
     response = await fast_llm.ainvoke([
-        SystemMessage(content="Eres un analista geopolítico experto en reranking de información."),
-        HumanMessage(content=prompt)
+        SystemMessage(content="Eres un analista de inteligencia diplomática. Responde SOLO en JSON."),
+        HumanMessage(content=prompt),
     ])
-    
+
     try:
-        recommendations = json.loads(response.content.replace('```json', '').replace('```', '').strip())
-        print(f"[OK] IA recomienda {len(recommendations)} fuentes clave.")
+        content = str(getattr(response, "content", "{}"))
+        decision = json.loads(content.replace("```json", "").replace("```", "").strip())
+        is_complete = decision.get("is_complete", True)
+        confidence = decision.get("confidence", 0.5)
+
+        # Si la confianza es alta y ya tenemos 2+ rondas, terminamos
+        if confidence >= 0.75 or depth >= 2:
+            is_complete = True
+
+        if not is_complete:
+            # Inyectar las queries sugeridas para la siguiente ronda
+            next_q = decision.get("next_queries", [])
+            print(f"[EVALUATOR] Insuficiente (confianza={confidence:.1f}). Lagunas: {decision.get('missing', [])}")
+            return {
+                "is_research_complete": False,
+                "research_queries": next_q if next_q else [f"{state['country']} {state['topic']} details"],
+            }
+
+        print(f"[EVALUATOR] Completo (confianza={confidence:.1f})")
+        return {"is_research_complete": True}
+
+    except Exception:
+        # Si falla el parsing, damos por completo
+        return {"is_research_complete": True}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 4. SYNTHESIZER: Genera el briefing final en .md
+# ═══════════════════════════════════════════════════════════════
+@logfire.instrument("Deep Synthesizer Node")
+async def synthesizer_node(state: AgentState):
+    stack = state.get("knowledge_stack", [])
+    depth = state.get("research_depth", 0)
+
+    print(f"--- [SYNTHESIZER] Generando briefing .md ({len(stack)} fuentes, {depth} rondas) ---")
+
+    output_template = _load_prompt("output_format.md")
+
+    # Preparar el conocimiento acumulado (enviar todo al LLM)
+    full_context = "\n\n---\n\n".join(stack[:15])  # Top 15 fragmentos
+
+    prompt = f"""Usa esta plantilla para generar el briefing final:
+
+{output_template}
+
+Variables:
+- TEMA: {state['topic']}
+- PAÍS: {state['country']}
+- COMITÉ: {state.get('committee', 'N/A')}
+- N_RONDAS: {depth}
+
+CONOCIMIENTO ACUMULADO (Knowledge Stack):
+{full_context}
+
+Genera el briefing completo en Markdown, llenando cada sección con la información real del knowledge stack.
+No inventes datos. Si no tienes información para una sección, escríbelo explícitamente.
+"""
+
+    response = await fast_llm.ainvoke([
+        SystemMessage(content="Eres un redactor de briefings de inteligencia diplomática. Generas Markdown impecable."),
+        HumanMessage(content=prompt),
+    ])
+
+    brief = str(getattr(response, "content", ""))
+
+    # Persistir en Knowledge Base
+    try:
+        from services.knowledge_base import knowledge_base
+        for fragment in stack[:10]:
+            knowledge_base.add_web_knowledge("Deep Research v2", fragment)
     except Exception as e:
-        print(f"Error evaluando recomendaciones: {e}")
-        recommendations = list(range(min(8, len(findings))))
+        print(f"KB persistence skipped: {e}")
 
-    return {"recommended_indices": recommendations}
-
-# 4. SYNTHESIZER: Toma la decisión del usuario (o IA si no hay selección) y consolida
-@logfire.instrument("Research Synthesizer Node")
-async def research_synthesizer_node(state: AgentState):
-    print("--- CONSOLIDANDO SELECCIÓN DE INVESTIGACIÓN ---")
-    
-    # Si el usuario eligió índices, usamos esos. Si no, usamos los recomendados por la IA.
-    # Si no hay ninguno, usamos los primeros 5 por defecto.
-    target_indices = state.get("selected_indices") or state.get("recommended_indices") or list(range(min(5, len(state["raw_findings"]))))
-    
-    final_data = []
-    for idx in target_indices:
-        if idx < len(state["raw_findings"]):
-            f = state["raw_findings"][idx]
-            final_data.append(f"FUENTE: {f.get('url')}\nCONTENIDO: {f.get('content')}")
-            
-    state["research_data"] = final_data
-    # Persistir en memoria permanente
-    from services.knowledge_base import knowledge_base
-    for fragment in final_data[:8]:
-        try:
-            source = "Web Research"
-            if "FUENTE: " in fragment:
-                parts = fragment.split("\n", 1)
-                source = parts[0].replace("FUENTE: ", "")
-                content = parts[1].replace("CONTENIDO: ", "")
-            else:
-                content = fragment
-            knowledge_base.add_web_knowledge(source, content)
-        except Exception as e:
-            print(f"Error persistiendo fragmento: {e}")
-
-    print(f"[OK] Investigación concluida con {len(target_indices)} fuentes. Conocimiento actualizado.")
-    return {"research_data": final_data}
+    print(f"[OK] Briefing generado ({len(brief)} chars)")
+    return {
+        "research_brief_md": brief,
+        "research_data": [brief] + stack[:5],  # Compatible con el Scribe existente
+    }

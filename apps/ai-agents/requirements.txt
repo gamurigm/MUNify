@@ -6,6 +6,7 @@ langchain-nvidia-ai-endpoints
 langchain-core
 fastapi
 uvicorn
+python-multipart
 logfire[fastapi]
 pydantic-settings
 sentence-transformers
@@ -14,3 +15,5 @@ trafilatura
 langgraph-checkpoint-redis
 redis
 numpy
+notebooklm-py
+crawl4ai
