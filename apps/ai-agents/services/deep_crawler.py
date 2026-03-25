@@ -4,18 +4,18 @@ Servicio de scraping profundo con crawl4ai.
 Convierte URLs en Markdown limpio para inyección directa al LLM.
 """
 import asyncio
-import logfire
+import logfire  # type: ignore
 
 try:
-    from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+    from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig  # type: ignore
     CRAWL4AI_AVAILABLE = True
 except ImportError:
     CRAWL4AI_AVAILABLE = False
-    logfire.warning("crawl4ai no instalado. Usando trafilatura como fallback.")
+    # logfire is handled below
 
 # Fallback
 try:
-    import trafilatura
+    import trafilatura  # type: ignore
 except ImportError:
     trafilatura = None
 
@@ -64,8 +64,10 @@ class DeepCrawler:
                 logfire.warning(f"[crawl4ai] Sin contenido: {url}")
                 return ""
         except Exception as e:
-            logfire.error(f"[crawl4ai] Error en {url}: {e}")
+            try: logfire.error(f"[crawl4ai] Error en {url}: {e}")
+            except: pass
             return await self._trafilatura_fallback(url)
+        return "" # Explicit final return
 
     async def _crawl4ai_many(self, urls: list) -> list:
         try:
@@ -79,8 +81,10 @@ class DeepCrawler:
                         output.append("")
                 return output
         except Exception as e:
-            logfire.error(f"[crawl4ai] Error batch: {e}")
+            try: logfire.error(f"[crawl4ai] Error batch: {e}")
+            except: pass
             return [await self._trafilatura_fallback(u) for u in urls]
+        return [] # Explicit final return
 
     # --- trafilatura fallback ---
     async def _trafilatura_fallback(self, url: str) -> str:
@@ -93,8 +97,11 @@ class DeepCrawler:
                 include_comments=False, include_tables=True
             )
             if content:
-                logfire.info(f"[trafilatura] OK: {url} ({len(content)} chars)")
-                return content[:8000]
+                content_str: str = str(content)
+                try: logfire.info(f"[trafilatura] OK: {url} ({len(content_str)} chars)")
+                except: pass
+                # pyre-fixme[16]
+                return content_str[0:8000] # type: ignore[index]
             return ""
         except Exception as e:
             logfire.error(f"[trafilatura] Error en {url}: {e}")

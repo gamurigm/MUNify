@@ -932,14 +932,57 @@ async def deep_research_search(body: dict):
     seen_urls = set()
 
     async def search_one(q):
-        try:
-            res = await asyncio.to_thread(
-                tavily.search, query=q, search_depth="advanced", max_results=5
-            )
-            return res.get("results", [])
-        except Exception as e:
-            print(f"Error en Tavily para '{q}': {e}")
-            return []
+        results = []
+        
+        # 1. Tavily Search
+        async def run_tavily():
+            try:
+                res = await asyncio.to_thread(tavily.search, query=q, search_depth="advanced", max_results=3)
+                return res.get("results", [])
+            except Exception as e:
+                print(f"Error en Tavily para '{q}': {e}")
+                return []
+                
+        # 2. SerpAPI (Google Scholar)
+        async def run_scholar():
+            try:
+                import os
+                # pyre-ignore[21]
+                from serpapi.google_search import GoogleSearch
+                serp_key = os.getenv("SERPAPI_KEY")
+                if not serp_key: return []
+                
+                params = {
+                  "engine": "google_scholar",
+                  "q": q,
+                  "api_key": serp_key,
+                  "num": 3
+                }
+                search = GoogleSearch(params)
+                res = await asyncio.to_thread(search.get_dict)
+                organic = res.get("organic_results", [])
+                
+                # Convertir formato SerpAPI al formato Tavily genérico
+                transformed = []
+                for item in organic:
+                    transformed.append({
+                        "title": item.get("title", ""),
+                        "url": item.get("link", ""),
+                        "content": item.get("snippet", "")
+                    })
+                return transformed
+            except Exception as e:
+                print(f"Error en SerpAPI Scholar para '{q}': {e}")
+                return []
+
+        # Run both in parallel
+        # pyre-ignore
+        tav_res, scho_res = await asyncio.gather(run_tavily(), run_scholar())
+        # pyre-ignore
+        results.extend(tav_res)
+        # pyre-ignore
+        results.extend(scho_res)
+        return results
 
     for attempt in range(1, max_attempts + 1):
         # Modificar el prompt si estamos reintentando
@@ -1041,28 +1084,75 @@ async def drafting_terminal_agent(body: dict):
     from langchain_core.messages import SystemMessage, HumanMessage, AIMessage  # type: ignore
     from datetime import datetime
     
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    current_year = current_date[:4]  # type: ignore[index]
+    # Inyectar el Knowledge Base (Cola de Prioridad) si viene en el body
+    kb_data = body.get("knowledge_base", [])
+    kb_summary = "\n".join([f"[{i+1}] {s.get('domain','?')}: {s.get('title','?')} - {s.get('snippet','')[:200]}" for i, s in enumerate(kb_data)])
     
+    # Cargar contexto de investigacion.md si existe
+    investigacion_md = ""
+    try:
+        with open("investigacion.md", "r", encoding="utf-8") as f:
+            investigacion_md = f.read()
+    except: pass
+
+    # Determinar tipo de documento para el prompt (Posicion Oficial vs Resolucion)
+    doc_type = body.get("doc_type", "Position Paper")
+    is_position_paper = "position" in doc_type.lower()
+    
+    current_date_str: str = datetime.now().strftime("%Y-%m-%d")
+    current_year: str = current_date_str[0:4]  # type: ignore[index]
+    
+    format_instruction = ""
+    if is_position_paper:
+        format_instruction = """
+[MODO ESTRICTO: DOCUMENTO DE POSICIÓN OFICIAL (LaTeX)]
+ESTÁS EDITANDO EL DOCUMENTO DE POSICIÓN, NO UNA RESOLUCIÓN. 
+1. Usa lenguaje diplomático de alta alcurnia (3ra persona: "La Federación de Rusia considera...", "El Reino de Noruega sostiene...").
+2. El formato de salida en 'draft_html' DEBE ser compatible con LaTeX o ser LaTeX puro envuelto en <pre> si el usuario lo pide, pero por defecto genera el contenido para el motor de conversión.
+3. ESTRUCTURA REQUERIDA:
+   - Resumen del tópico.
+   - Postura Nacional (basada en KNOWLEDGE BASE).
+   - Acciones recomendadas.
+4. Si generas bloques grandes, usa etiquetas de sección: \\section*{Título}, \\subsection*{Subtítulo}.
+"""
+    else:
+        format_instruction = """
+[MODO ESTRICTO: PROYECTO DE RESOLUCIÓN]
+1. Usa Cláusulas Preambulatorias (Participios: Reafirmando, Teniendo en cuenta).
+2. Usa Cláusulas Operativas numeradas (Sustantivos: Insta, Condena, Decide).
+"""
+
+    # Pre-slice to help linter
+    inv_frag: str = str(investigacion_md)[0:5000] if investigacion_md else ""  # type: ignore[index]
+    ctx_frag: str = str(doc_context)[0:5000] if doc_context else ""  # type: ignore[index]
+
     sys_prompt = f"""Eres el 'MUNify Autonomous Terminal Agent'. Tu misión es asistir en la creación impecable de documentos diplomáticos.
-[DIRECTIVA DE ROL - AÑO 2026]: Estamos en una simulación inmersiva donde el AÑO ACTUAL ES {current_year}. Actúa, analiza y recomienda EXACTAMENTE como si estuviéramos en {current_year}. NUNCA rompas el personaje mencionando tu fecha de entrenamiento o el año 2024. Tu herramienta de búsqueda web (FASE 2) tiene acceso en tiempo real a los eventos actuales. Si el usuario pide datos de {current_year}, asúmelos como eventos del PRESENTE.
-TIENES 4 FASES DE TRABAJO (No te saltes la Fase 1):
-FASE 1 - Refinamiento de Prompt: Si el usuario pide investigar un tema, NO busques de inmediato. Hazle preguntas iterativas para construir el "Prompt Perfecto" (¿Qué país representa? ¿Cuál es el límite temporal exacto?, ¿Se enfoca en economía, seguridad o derechos humanos?). Sigue charlando hasta que el usuario confirme el enfoque.
-FASE 2 - Activación Mixta (Notebook + Web): Una vez el usuario aprueba el enfoque y si el usuario tiene un contexto documental establecido (indicado en el prompt), tu acción será 'trigger_mixed_research'. Si solo es investigación libre sin cuaderno, tu acción es 'trigger_research'.
-FASE 3 - Análisis y Redacción: Cuando ya tengas en el historial la inyección del texto investigado, discute con el usuario qué ideas filtrar. Cuando decida que quieres redactar, tu acción será 'draft' e incluirás el HTML en "draft_html".
+[DIRECTIVA DE ROL - AÑO 2026]: Estamos en una simulación inmersiva donde el AÑO ACTUAL ES {current_year}. Actúa, analiza y recomienda EXACTAMENTE como si estuviéramos en {current_year}. NUNCA rompas el personaje mencionando tu fecha de entrenamiento. 
 
-Contexto actual de la hoja:
-{doc_context[:30000]}...  # type: ignore[index]
+TIENES 4 FASES DE TRABAJO:
+1. REFINAMIENTO: Si el usuario pide investigar, hazle preguntas iterativas.
+2. INVESTIGACIÓN: Activa 'trigger_mixed_research' (si hay cuadernos) o 'trigger_research'.
+3. REDACCIÓN OFICIAL (Step-by-Step): Esta es tu prioridad. Genera bloques de texto coherentes y extensos basados en la base de conocimiento oficial.
 
-RESPONDE **ÚNICAMENTE** EN ESTE FORMATO JSON ESTRICTO, sin usar comentarios tipo //, sin backticks ni texto adicional fuera de las llaves:
+{format_instruction}
+
+[KNOWLEDGE BASE (PRIORITY QUEUE)]:
+{kb_summary if kb_summary else "Vacia. Necesitas investigar primero."}
+
+    [REGLAS HISTÓRICAS / CONTEXTO ADICIONAL (.md)]:
+    {inv_frag}
+    
+    [CANVAS ACTUAL ({doc_type})]:
+    {ctx_frag}
+
+RESPONDE **ÚNICAMENTE** EN ESTE FORMATO JSON ESTRICTO:
 {{
-  "reply": "Tu respuesta conversacional para el usuario (la pregunta de refinamiento o el análisis).",
-  "action": "chat",
-  "research_topic": "El tema ultra-específico si action es trigger_research o trigger_mixed_research",
-  "research_context": "El contexto u orientación particular para guiar la búsqueda profunda",
-  "draft_html": "<p>Tercera persona o texto mejorado</p>"
+  "reply": "Respuesta al usuario",
+  "action": "chat | trigger_research | trigger_mixed_research | draft",
+  "research_topic": "...",
+  "research_context": "...",
+  "draft_html": "Contenido en LaTeX o texto profesional para insertar"
 }}
-Nota para la clavel 'action': los valores válidos son SOLAMENTE "chat", "trigger_research", "trigger_mixed_research", o "draft".
 """
     messages = [SystemMessage(content=sys_prompt)]
     
@@ -1333,7 +1423,7 @@ async def refine_queue(request: QueueRefineRequest):
             f"[{i+1}] {s.get('title','?')} ({s.get('domain','?')})"
             for i, s in enumerate(sources_subset)
         )
-        doc_hint = full_context[:1500] if full_context else "Sin contexto adicional."  # type: ignore[index]
+        doc_hint: str = str(full_context)[0:1500] if full_context else ""  # type: ignore[index]
         
         gap_prompt = f"""Analiza estas fuentes e identifica qué temas FALTAN.
 FUENTES: {sources_summary}
@@ -1423,22 +1513,36 @@ REGLAS:
 NO incluyas texto fuera del JSON.
 """
     try:
-        logfire.info(f"Ejecutando NotebookLM Analysis para el tema: {topic}")
-        # Usamos el notebook_service ya existente en api.py
-        result = await notebook_service.query_notebook(notebook_id, prompt)
+        logfire.info(f"Ejecutando NotebookLM Analysis para notebook={notebook_id}, tema: {topic}")
+        
+        # Timeout wrapper: don't let a single notebook hang forever
+        try:
+            result = await asyncio.wait_for(
+                notebook_service.query_notebook(notebook_id, prompt),
+                timeout=60.0  # 60 second timeout per notebook
+            )
+        except asyncio.TimeoutError:
+            logfire.warning(f"NotebookLM timeout para notebook {notebook_id}")
+            return {"status": "error", "sources": [], "error": f"Timeout: el cuaderno {notebook_id} no respondió en 60s"}
         
         content = str(result.get("answer", "[]"))
         
         json_match = re.search(r'\[.*\]', content, re.DOTALL)
         if json_match:
             content = json_match.group(0)
-            
-        parsed_quotes = json.loads(content)
+        
+        try:
+            parsed_quotes = json.loads(content)
+        except json.JSONDecodeError:
+            # If NotebookLM returned text that isn't valid JSON, wrap it as a single source
+            logfire.warning(f"NotebookLM devolvió texto no-JSON para {notebook_id}, wrapping...")
+            content_str: str = str(content)
+            parsed_quotes = [{"title": "Respuesta del Cuaderno", "snippet": content_str[0:500], "source_name": "NotebookLM"}] # type: ignore[index]
         
         sources = []
         for q in parsed_quotes:
             sources.append({
-                "url": "notebook://local",  # Identificador especial para frontend
+                "url": "notebook://local",
                 "title": q.get("title", "Extracto de Documento"),
                 "snippet": q.get("snippet", ""),
                 "domain": "NotebookLM",
@@ -1454,8 +1558,10 @@ NO incluyas texto fuera del JSON.
         }
         
     except Exception as e:
-        logfire.error(f"Error en Notebook Analysis: {e}")
-        return {"status": "error", "sources": [], "error": str(e)}
+        error_msg = str(e)
+        logfire.error(f"Error en Notebook Analysis ({notebook_id}): {error_msg}")
+        # Return 200 with error details so frontend can display the reason
+        return {"status": "error", "sources": [], "source_count": 0, "error": error_msg}
 
 if __name__ == "__main__":
     import uvicorn  # pyre-ignore

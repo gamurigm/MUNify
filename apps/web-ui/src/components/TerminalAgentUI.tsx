@@ -25,6 +25,7 @@ interface ActiveQuestion {
 
 interface TerminalAgentUIProps {
   documentContext?: string;
+  documentType?: string;
   engineeringContext?: string;  // Content from .md files (Context Engineering)
   onClose?: () => void;
   onToggleExpand?: () => void;
@@ -32,6 +33,7 @@ interface TerminalAgentUIProps {
 
 export default function TerminalAgentUI({ 
   documentContext = "", 
+  documentType = "Position Paper",
   engineeringContext = "",
   onClose, 
   onToggleExpand 
@@ -217,6 +219,11 @@ export default function TerminalAgentUI({
 
     // --- MANEJO DE COMANDOS LOCALES (SHELL EMULATION) ---
     if (cmd === 'clear') {
+       if (args[0] === 'queue') {
+          setKnowledgeBase([]);
+          setMessages(prev => [...prev, { role: 'system', content: '[QUEUE_PURGED] Toda la cola de prioridad ha sido eliminada permanentemente.' }]);
+          return;
+       }
        setMessages([]);
        return;
     }
@@ -342,90 +349,160 @@ export default function TerminalAgentUI({
 
     if (cmd === 'scan') {
        setMessages(prev => [...prev, { role: 'user', content: fullInput }]);
-       const scanTopic = args.length > 0 ? args.join(' ') : '';
+       
+       // Parse flags: scan --all [tema] OR scan [tema] (uses active notebook only)
+       const useAll = args.includes('--all');
+       const topicArgs = args.filter((a: string) => a !== '--all');
+       const scanTopic = topicArgs.length > 0 ? topicArgs.join(' ') : '';
+       
        setIsLoading(true);
-       setMessages(prev => [...prev, { role: 'system', content: `[SCAN INICIADO] Consultando TODOS los cuadernos conectados...` }]);
        
        try {
-         // 1. Fetch all available notebooks
-         const nbRes = await fetch(`http://${window.location.hostname}:8000/api/v1/notebooks`);
-         if (!nbRes.ok) throw new Error('No se pudo conectar con NotebookLM');
-         const nbData = await nbRes.json();
-         const notebooks = nbData.notebooks || [];
-         
-         if (notebooks.length === 0) {
-           setMessages(prev => [...prev, { role: 'system', content: `[SCAN] No hay cuadernos conectados. Sube archivos desde la interfaz principal primero.` }]);
-           setIsLoading(false);
-           return;
-         }
-
-         setMessages(prev => [...prev, { role: 'system', content: `[SCAN] Encontrados ${notebooks.length} cuaderno(s): ${notebooks.map((n: any) => n.title).join(', ')}` }]);
-
-         // 2. Build the query prompt
          const queryTopic = scanTopic || 'Extrae los datos, argumentos y evidencias más relevantes de todos los documentos';
+         
+         if (useAll) {
+           // === MODE: ALL NOTEBOOKS ===
+           setMessages(prev => [...prev, { role: 'system', content: `[SCAN --ALL] Consultando TODOS los cuadernos conectados...` }]);
+           
+           const nbRes = await fetch(`http://${window.location.hostname}:8000/api/v1/notebooks`);
+           if (!nbRes.ok) throw new Error('No se pudo conectar con NotebookLM');
+           const nbData = await nbRes.json();
+           const notebooks = nbData.notebooks || [];
+           
+           if (notebooks.length === 0) {
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN] No hay cuadernos conectados.` }]);
+             setIsLoading(false);
+             return;
+           }
 
-         // 3. Query ALL notebooks in parallel
-         const promises = notebooks.map((nb: any) => 
-           fetch(`http://${window.location.hostname}:8000/api/v1/notebook-analyze`, {
+           setMessages(prev => [...prev, { role: 'system', content: `[SCAN] ${notebooks.length} cuadernos encontrados. Consultando en paralelo (esto puede tardar)...` }]);
+
+           // Query in batches of 3 to avoid rate-limiting
+           const BATCH_SIZE = 3;
+           const newSources: KnowledgeSource[] = [];
+           let totalExtracted = 0;
+
+           for (let batch = 0; batch < notebooks.length; batch += BATCH_SIZE) {
+             const batchNbs = notebooks.slice(batch, batch + BATCH_SIZE);
+             const promises = batchNbs.map((nb: any) =>
+               fetch(`http://${window.location.hostname}:8000/api/v1/notebook-analyze`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ notebook_id: nb.id, topic: queryTopic, context: documentContext.substring(0, 2000) })
+               })
+             );
+
+             const results = await Promise.allSettled(promises);
+             for (let i = 0; i < results.length; i++) {
+               const result = results[i];
+               const nbTitle = batchNbs[i]?.title || `Cuaderno`;
+               if (result.status === 'fulfilled' && result.value instanceof Response && result.value.ok) {
+                 const data = await result.value.json();
+                 if (data.status === 'error') {
+                   setMessages(prev => [...prev, { role: 'system', content: `  ✗ ${nbTitle}: ${data.error || 'Error desconocido'}` }]);
+                 } else if (data.sources && data.sources.length > 0) {
+                   data.sources.forEach((s: any) => {
+                     newSources.push({ title: `[${nbTitle}] ${s.title}`, domain: 'NotebookLM', snippet: s.snippet, url: s.url || 'notebook://local', full_text: s.snippet });
+                     totalExtracted++;
+                   });
+                   setMessages(prev => [...prev, { role: 'system', content: `  ✓ ${nbTitle}: ${data.source_count || 0} extractos` }]);
+                 } else {
+                   setMessages(prev => [...prev, { role: 'system', content: `  ○ ${nbTitle}: Sin extractos relevantes` }]);
+                 }
+               } else {
+                 const errDetail = result.status === 'rejected' ? result.reason : 'HTTP Error';
+                 setMessages(prev => [...prev, { role: 'system', content: `  ✗ ${nbTitle}: ${errDetail}` }]);
+               }
+             }
+           }
+
+           if (newSources.length > 0) {
+             setKnowledgeBase(prev => [...newSources, ...prev]);
+             setShowKnowledgeHub(true);
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN COMPLETADO] ${totalExtracted} extractos de ${notebooks.length} cuaderno(s) añadidos.` }]);
+           } else {
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN] No se extrajeron resultados.` }]);
+           }
+
+         } else {
+           // === MODE: ACTIVE NOTEBOOK ONLY (default) ===
+           const activeNbId = localStorage.getItem(`active_notebook_id_${committeeId}`);
+           
+           if (!activeNbId) {
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN] No hay un cuaderno activo seleccionado para este comité.\n→ Selecciona uno desde la interfaz de documentos, o usa 'scan --all' para consultar todos.` }]);
+             setIsLoading(false);
+             return;
+           }
+
+           // Get the notebook title for display
+           let nbTitle = 'Cuaderno Activo';
+           try {
+             const nbRes = await fetch(`http://${window.location.hostname}:8000/api/v1/notebooks`);
+             if (nbRes.ok) {
+               const nbData = await nbRes.json();
+               const found = (nbData.notebooks || []).find((nb: any) => nb.id === activeNbId);
+               if (found) nbTitle = found.title;
+             }
+           } catch { /* silent */ }
+
+           setMessages(prev => [...prev, { role: 'system', content: `[SCAN] Consultando cuaderno activo: "${nbTitle}" (${activeNbId.substring(0, 8)}...)` }]);
+
+           const res = await fetch(`http://${window.location.hostname}:8000/api/v1/notebook-analyze`, {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
-               notebook_id: nb.id,
+               notebook_id: activeNbId,
                topic: queryTopic,
                context: documentContext.substring(0, 2000),
              })
-           })
-         );
+           });
 
-         const results = await Promise.allSettled(promises);
-         const newSources: KnowledgeSource[] = [];
-         let totalExtracted = 0;
-
-         for (let i = 0; i < results.length; i++) {
-           const result = results[i];
-           const nbTitle = notebooks[i]?.title || `Cuaderno ${i+1}`;
+           if (!res.ok) {
+               throw new Error(`Error de conexión HTTP ${res.status} al consultar cuadernos.`);
+           }
            
-           if (result.status === 'fulfilled' && result.value instanceof Response && result.value.ok) {
-             const data = await result.value.json();
-             if (data.sources) {
-               data.sources.forEach((s: any) => {
-                 newSources.push({
-                   title: `[${nbTitle}] ${s.title}`,
-                   domain: 'NotebookLM',
-                   snippet: s.snippet,
-                   url: s.url || 'notebook://local',
-                   full_text: s.snippet,
-                 });
-                 totalExtracted++;
-               });
-             }
-             setMessages(prev => [...prev, { role: 'system', content: `  ✓ ${nbTitle}: ${data.source_count || 0} extractos` }]);
+           const data = await res.json();
+
+           if (data.status === 'error') {
+               setMessages(prev => [...prev, { role: 'system', content: `[ERROR] El cuaderno devolvió: ${data.error || 'Error desconocido'}` }]);
+           } else if (data.sources && data.sources.length > 0) {
+             const newSources: KnowledgeSource[] = data.sources.map((s: any) => ({
+               title: `[${nbTitle}] ${s.title}`,
+               domain: 'NotebookLM',
+               snippet: s.snippet,
+               url: s.url || 'notebook://local',
+               full_text: s.snippet,
+             }));
+             setKnowledgeBase(prev => [...newSources, ...prev]);
+             setShowKnowledgeHub(true);
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN COMPLETADO] ${newSources.length} extractos de "${nbTitle}" añadidos a la Cola. Tema: "${queryTopic}"` }]);
            } else {
-             setMessages(prev => [...prev, { role: 'system', content: `  ✗ ${nbTitle}: Error al consultar` }]);
+             setMessages(prev => [...prev, { role: 'system', content: `[SCAN] El cuaderno no devolvió extractos para ese tema.` }]);
            }
          }
-
-         if (newSources.length > 0) {
-           setKnowledgeBase(prev => [...newSources, ...prev]);
-           setShowKnowledgeHub(true);
-           setMessages(prev => [...prev, { 
-             role: 'system', 
-             content: `[SCAN COMPLETADO] ${totalExtracted} extractos de ${notebooks.length} cuaderno(s) añadidos a la Cola de Prioridad. Tema: "${queryTopic}"` 
-           }]);
-         } else {
-           setMessages(prev => [...prev, { role: 'system', content: `[SCAN] No se extrajeron resultados. Verifica que los cuadernos tengan documentos cargados.` }]);
-         }
        } catch (e) {
-         setMessages(prev => [...prev, { role: 'system', content: `[ERROR] Falló el escaneo de cuadernos: ${e}` }]);
+         setMessages(prev => [...prev, { role: 'system', content: `[ERROR] Falló el escaneo: ${e}` }]);
        } finally {
          setIsLoading(false);
        }
        return;
     }
 
+    if (cmd === 'template' && args[0] === 'po') {
+       setMessages(prev => [...prev, { role: 'user', content: fullInput }]);
+       const poPrompt = `Genera un FORMATO BÁSICO EXTRAPOLABLE de Posición Oficial (LaTeX) para el país ${documentType === 'Position Paper' ? 'detectado' : 'especificado'}, el comité ${committeeId} y el tema actual. Usa la estructura de reglas_po.md: Encabezado, Contexto Política Exterior, Análisis Jurídico y Propuestas. Deja placeholders claros si falta info.`;
+       
+       setMessages(prev => [...prev, { role: "system", content: "Generando esqueleto estructural de Posición Oficial..." }]);
+       
+       // Trigger the backend call directly with the prompt
+       setIsLoading(true);
+       handleAISubmit(poPrompt);
+       return;
+    }
+
     if (cmd === 'help') {
        setMessages(prev => [...prev, { role: 'user', content: fullInput }]);
-       const helpText = `COMANDOS DISPONIBLES:\n- ls         : Lista los recursos virtuales del entorno.\n- ls -k      : Lista las fuentes de conocimiento indexadas.\n- cat [ID]   : Extrae e inyecta la fuente con ese ID (ej: cat 1).\n- cat draft  : Inspecciona el texto detectado del Canvas en vivo.\n- find [str] : Búsqueda profunda multi-campo (título, snippet, dominio, URL).\n- scan [tema]: Escanea TODOS los cuadernos NotebookLM y añade extractos a la Cola.\n- flush      : Vacía la Cola de Prioridad para nueva sesión.\n- debate [t] : Genera argumentos A FAVOR y EN CONTRA sobre un tema.\n- clear      : Limpia el historial de la pantalla.\n- help       : Muestra este mensaje de ayuda.`;
+       const helpText = `COMANDOS DISPONIBLES:\n- template po  : Genera esqueleto LaTeX de Posición Oficial (Auto-rellenado).\n- ls           : Lista los recursos virtuales del entorno.\n- ls -k        : Lista las fuentes de conocimiento indexadas.\n- cat [ID]     : Extrae e inyecta la fuente con ese ID (ej: cat 1).\n- cat draft    : Inspecciona el texto detectado del Canvas en vivo.\n- find [str]   : Búsqueda profunda multi-campo.\n- scan [tema]  : Escanea el CUADERNO ACTIVO y añade extractos a la Cola.\n- flush        : Vacía la Cola de Prioridad.\n- debate [t]   : Genera argumentos A FAVOR y EN CONTRA.\n- clear        : Limpia el historial de la pantalla.\n- help         : Muestra este mensaje de ayuda.`;
        setMessages(prev => [...prev, { role: 'system', content: helpText }]);
        return;
     }
@@ -433,7 +510,10 @@ export default function TerminalAgentUI({
     // --- PROCESAMIENTO AI NORMAL ---
     setMessages(prev => [...prev, { role: 'user', content: fullInput }]);
     setIsLoading(true);
+    handleAISubmit(fullInput);
+  };
 
+  const handleAISubmit = async (prompt: string) => {
     try {
       // Filtrar los mensajes de sistema puramente visuales
       const historyToSend = messages
@@ -444,9 +524,11 @@ export default function TerminalAgentUI({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: fullInput,
+          question: prompt,
           document_context: documentContext,
-          history: historyToSend
+          doc_type: documentType,
+          history: historyToSend,
+          knowledge_base: knowledgeBase
         })
       });
 
@@ -786,9 +868,16 @@ export default function TerminalAgentUI({
                   <h3 className="text-[#00e5ff] font-black text-xl uppercase tracking-widest">Knowledge Priority Queue</h3>
                   <p className="text-white/40 text-xs font-mono">Gestión visual y búsqueda fuzzy de inteligencia recolectada.</p>
                 </div>
-                <button onClick={() => setShowKnowledgeHub(false)} className="bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-400 p-2 rounded-full transition shadow-lg">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <div className="flex items-center gap-3">
+                  {knowledgeBase.length > 0 && (
+                    <button onClick={() => setKnowledgeBase([])} className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all shadow-lg border border-red-500/20">
+                      Vaciar Cola
+                    </button>
+                  )}
+                  <button onClick={() => setShowKnowledgeHub(false)} className="bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-400 p-2 rounded-full transition shadow-lg">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
               </div>
 
               {/* Barra de Búsqueda Fuzzy */}

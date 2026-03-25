@@ -120,6 +120,7 @@ export default function DraftingPage() {
         setNlmAuthenticated(false);
         setNlmReady(false);
         setNotebookId(null);
+        localStorage.removeItem(`active_notebook_id_${committeeId}`);
         setMessages(prev => [...prev, { role: 'ai', text: '✅ **Sesión limpia.** Ahora puedes iniciar un nuevo login de forma segura.' }]);
     } catch (err) {
         setMessages(prev => [...prev, { role: 'ai', text: '❌ Error al limpiar la sesión. Reintenta en unos instantes.' }]);
@@ -380,6 +381,7 @@ export default function DraftingPage() {
 
   const handleSelectNotebook = async (nbId: string) => {
     setNotebookId(nbId);
+    localStorage.setItem(`active_notebook_id_${committeeId}`, nbId);
     await fetchNotebookSources(nbId);
     setIsContextPanelOpen(false);
     
@@ -416,6 +418,7 @@ export default function DraftingPage() {
         if (!response.ok) throw new Error('Ingest Error');
         const data = await response.json();
         setNotebookId(data.notebook_id);
+        localStorage.setItem(`active_notebook_id_${committeeId}`, data.notebook_id);
         setNotebookSources(data.sources || []);
         
         const fileNames = Array.from(files).map(f => f.name).join(', ');
@@ -788,6 +791,7 @@ export default function DraftingPage() {
                                             <button
                                                 onClick={() => { 
                                                     setNotebookId(null); 
+                                                    localStorage.removeItem(`active_notebook_id_${committeeId}`);
                                                     setNotebookSources([]); 
                                                     setIsContextPanelOpen(false); 
                                                     setMessages([{ role: 'ai', text: 'Estudio de Redacción listo. Define los parámetros para comenzar.' }]); 
@@ -1157,6 +1161,7 @@ export default function DraftingPage() {
           `}>
             <TerminalAgentUI 
                 documentContext={editorContent} 
+                documentType={params.docType}
                 onClose={() => setTerminalSizeMode('off')}
                 onToggleExpand={() => {
                    if (terminalSizeMode === 'compact') setTerminalSizeMode('mid');
