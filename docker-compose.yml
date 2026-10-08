@@ -1,27 +1,59 @@
 version: '3.8'
 
 services:
-  # Base de Datos Relacional
-  postgres:
-    image: postgres:16
-    container_name: munify-db-v2
-    environment:
-      POSTGRES_USER: munify_user
-      POSTGRES_PASSWORD: munify_password
-      POSTGRES_DB: munify_db
+  # ─── Go Gateway (Auth + Sessions + Documents + Collab + AI Proxy) ───
+  gateway:
+    build: ./gateway
+    container_name: munify-gateway
     ports:
-      - "5433:5432"
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      JWT_SECRET: ${JWT_SECRET:-YmFzZTY0LWVuY29kZWQtbXVuaWZ5LXNlY3JldC1rZXktdGhhdC1pcy1hdC1sZWFzdC0yNTYtYml0cy1sb25n}
+      AI_ENGINE_URL: http://ai-engine:8000
+      DB_PATH: /data/munify.db
+      FRONTEND_ORIGIN: http://localhost:3001
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8080/api/auth/google/callback}
+    volumes:
+      - gateway-data:/data
+    networks:
+      - munify-network
+    depends_on:
+      - ai-engine
+
+  # ─── AI Engine (FastAPI — only AI/LLM endpoints) ───
+  ai-engine:
+    build: ./apps/ai-agents
+    container_name: munify-ai-engine
+    ports:
+      - "8000:8000"
+    environment:
+      NVIDIA_API_KEY_1: ${NVIDIA_API_KEY_1}
+      NVIDIA_API_KEY_2: ${NVIDIA_API_KEY_2}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    volumes:
+      - ai-data:/app/data
     networks:
       - munify-network
 
-  # Cache y Mensajería Real-time
-  redis:
-    image: redis:latest
-    container_name: munify-redis
+  # ─── Web UI (Next.js) ───
+  web-ui:
+    build: ./apps/web-ui
+    container_name: munify-web-ui
     ports:
-      - "6379:6379"
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:8080
     networks:
       - munify-network
+    depends_on:
+      - gateway
+
+volumes:
+  gateway-data:
+  ai-data:
 
 networks:
   munify-network:

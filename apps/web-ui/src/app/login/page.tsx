@@ -5,8 +5,8 @@ import { Suspense } from 'react';
 
 export default function LoginPage() {
   const handleGoogleLogin = () => {
-    // Direct call to the backend OAuth2 endpoint
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    // Redirect to Go Gateway's Google OAuth2 endpoint
+    window.location.href = 'http://localhost:8080/api/auth/google';
   };
 
   return (

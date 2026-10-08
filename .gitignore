@@ -1,67 +1,47 @@
-# Dependencies
-node_modules/
-.next/
-/target/
-build/
-dist/
-venv/
-.venv/
-conv_venv/
-__pycache__/
+# ─── Build Artifacts ───
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ─── Go ───
+gateway/munify-gateway.exe
+gateway/data/
+
+# ─── Python ───
+apps/ai-agents/venv/
+apps/ai-agents/__pycache__/
+apps/ai-agents/**/__pycache__/
+apps/ai-agents/data/chroma_db/
 *.pyc
-.gradle/
-.mvn/
 
-# Environment / Keys
-.env
-.env.local
-.env.*.local
-.vercel
-secrets.json
+# ─── Node.js ───
+node_modules/
+apps/web-ui/.next/
+apps/web-ui/node_modules/
+apps/collaboration-server/node_modules/
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Documentation / Scratch
-*.md
-!README.md
-!GUIA_RESOLUCIONES.md
-!COMPETENCIAS_COMITES.md
-docs/scratch/
-
-# Tests
-**/test/**
-**/tests/**
-*.test.js
-*.spec.js
-*.test.tsx
-*.test.java
-
-# IDEs
+# ─── IDE ───
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# ─── Environment ───
+.env
+.env.properties
+*.log
+
+# ─── LaTeX artifacts ───
+*.aux
+*.log
+*.synctex.gz
+
+# ─── OS ───
 .DS_Store
+Thumbs.db
 
-# UI Assets
-*.png
-!MUNify-main-v2.png
-*.webp
-*.jpg
-*.avif
-*.pdf
-mun-doc/
-
-# Databases
-**/chroma_db/
-**/persistent_kb/
-*.index
-*.sqlite3
-*.db
-*.mv.db
-*/data/
+# ─── Spring Boot legacy (can be removed entirely) ───
+apps/core-backend/target/
+apps/core-backend/data/
+apps/core-backend/maven_output*.log

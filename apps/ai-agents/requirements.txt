@@ -9,11 +9,10 @@ uvicorn
 python-multipart
 logfire[fastapi]
 pydantic-settings
-sentence-transformers
 chromadb
 trafilatura
-langgraph-checkpoint-redis
-redis
+optimum[onnxruntime]
+onnxruntime
 numpy
 notebooklm-py
 crawl4ai
